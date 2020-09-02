@@ -111,7 +111,7 @@ void Navigation::ObservePointCloud(const vector<Vector2f>& cloud,
 }
 
 void Navigation::Run() {
-  while(!nav_complete_)
+  if(!nav_complete_)
   {
 
   }
