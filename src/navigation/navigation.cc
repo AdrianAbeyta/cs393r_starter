@@ -86,7 +86,8 @@ void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) {
   robot_angle_ = angle;
 
   if( (nav_goal_loc_-loc).norm() < nav_goal_loc_tol_ &&
-      fabs(nav_goal_angle_-angle) < nav_goal_angle_tol_)
+      fabs(nav_goal_angle_-angle) < nav_goal_angle_tol_ &&
+      nav_complete_ == 0)
   {
     nav_complete_ = 1;
   }
