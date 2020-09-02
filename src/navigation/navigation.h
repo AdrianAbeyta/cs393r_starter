@@ -92,6 +92,14 @@ class Navigation {
   const float nav_goal_loc_tol_ = 0.05; //TODO- make configurable parameter
   // Navigation goal angle tolerance
   const float nav_goal_angle_tol_ = 0.1; //TODO- make configurable parameter
+  // Max velocity
+  const float max_velocity_ = 1.0; // m/s
+  // Max acceleration
+  const float max_acceleration_ = 4.0; // m/s2
+  //Max deceleration
+  const float max_deceleration_ = 4.0; // m/s2
+  //Timestamp
+  const float time_step_ = 1.0/20; // s
   
 };
 
