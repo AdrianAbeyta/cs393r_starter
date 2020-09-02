@@ -86,6 +86,11 @@ class Navigation {
   Eigen::Vector2f nav_goal_loc_;
   // Navigation goal angle.
   float nav_goal_angle_;
+  // Navigation goal location tolerance
+  const float nav_goal_loc_tol_ = 0.05;
+  // Navigation goal angle tolerance
+  const float nav_goal_angle_tol_ = 0.1;
+  
 };
 
 }  // namespace navigation
