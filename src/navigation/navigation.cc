@@ -75,12 +75,22 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
 void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   nav_goal_loc_ = loc;
   nav_goal_angle_ = angle;
+
+  nav_complete_ = 0;
+
   return;
 }
 
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) {
   robot_loc_ = loc;
   robot_angle_ = angle;
+
+  if( (nav_goal_loc_-loc).norm() < nav_goal_loc_tol_ &&
+      fabs(nav_goal_angle_-angle) < nav_goal_angle_tol_)
+  {
+    nav_complete_ = 1;
+  }
+      
   return;
 }
 
@@ -100,6 +110,10 @@ void Navigation::ObservePointCloud(const vector<Vector2f>& cloud,
 }
 
 void Navigation::Run() {
+  while(!nav_complete_)
+  {
+
+  }
 }
 
 // Create Helper functions here
