@@ -81,7 +81,7 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) {
   robot_loc_ = loc;
   robot_angle_ = angle;
-  return
+  return;
 }
 
 void Navigation::UpdateOdometry(const Vector2f& loc,
