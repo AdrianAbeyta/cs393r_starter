@@ -86,10 +86,12 @@ class Navigation {
   Eigen::Vector2f nav_goal_loc_;
   // Navigation goal angle.
   float nav_goal_angle_;
+
+  ////HELMS DEEP ADDITIONS////
   // Navigation goal location tolerance
-  const float nav_goal_loc_tol_ = 0.05;
+  const float nav_goal_loc_tol_ = 0.05; //TODO- make configurable parameter
   // Navigation goal angle tolerance
-  const float nav_goal_angle_tol_ = 0.1;
+  const float nav_goal_angle_tol_ = 0.1; //TODO- make configurable parameter
   
 };
 
