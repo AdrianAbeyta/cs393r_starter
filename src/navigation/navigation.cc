@@ -81,17 +81,7 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   return;
 }
 
-void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) {
-  robot_loc_ = loc;
-  robot_angle_ = angle;
-
-  if( nav_goal_loc_[0]-loc[0] < nav_goal_loc_tol_ &&
-      fabs(nav_goal_angle_-angle) < nav_goal_angle_tol_ &&
-      nav_complete_ == 0)
-  {
-    nav_complete_ = 1;
-  }
-      
+void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) { 
   return;
 }
 
@@ -103,6 +93,13 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
   odom_angle_ = angle;                             
   robot_vel_ = vel;
   robot_omega_ = ang_vel;
+
+  if( nav_goal_loc_[0]-loc[0] < nav_goal_loc_tol_ &&
+      fabs(nav_goal_angle_-angle) < nav_goal_angle_tol_ &&
+      nav_complete_ == 0)
+  {
+    nav_complete_ = 1;
+  }
   return;
 }
 
