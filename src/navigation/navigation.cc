@@ -85,7 +85,7 @@ void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) {
   robot_loc_ = loc;
   robot_angle_ = angle;
 
-  if( (nav_goal_loc_-loc).norm() < nav_goal_loc_tol_ &&
+  if( nav_goal_loc_[0]-loc[0] < nav_goal_loc_tol_ &&
       fabs(nav_goal_angle_-angle) < nav_goal_angle_tol_ &&
       nav_complete_ == 0)
   {
@@ -113,7 +113,7 @@ void Navigation::ObservePointCloud(const vector<Vector2f>& cloud,
 void Navigation::Run() {
   if(!nav_complete_)
   {
-    const float distance_to_goal = robot_loc_[0]-nav_goal_loc_[0];
+    const float distance_to_goal = fabs(robot_loc_[0]-nav_goal_loc_[0]);
     const float distance_to_stop = (robot_vel_[0]*robot_vel_[0])/(2*max_deceleration_);
 
     float commmanded_velocity;
