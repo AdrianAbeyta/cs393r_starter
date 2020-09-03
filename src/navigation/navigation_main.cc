@@ -32,10 +32,11 @@
 #include "eigen3/Eigen/Dense"
 #include "eigen3/Eigen/Geometry"
 #include "gflags/gflags.h"
-#include "geometry_msgs/Pose2D.h"
+//#include "geometry_msgs/Pose2D.h"
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
+#include "amrl_msgs/Localization2DMsg.h"
 #include "sensor_msgs/LaserScan.h"
 #include "visualization_msgs/Marker.h"
 #include "visualization_msgs/MarkerArray.h"
@@ -115,11 +116,11 @@ void SignalHandler(int) {
   run_ = false;
 }
 
-void LocalizationCallback(const geometry_msgs::Pose2D& msg) {
+void LocalizationCallback(const amrl_msgs::Localization2DMsg& msg) {
   if (FLAGS_v > 0) {
     printf("Localization t=%f\n", GetWallTime());
   }
-  navigation_->UpdateLocation(Vector2f(msg.x, msg.y), msg.theta);
+  navigation_->UpdateLocation(Vector2f(msg.pose.x, msg.pose.y), msg.pose.theta);
 }
 
 int main(int argc, char** argv) {
