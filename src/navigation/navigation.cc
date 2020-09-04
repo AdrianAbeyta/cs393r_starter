@@ -73,7 +73,7 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
 }
 
 void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
-  nav_goal_loc_ = loc - 0.6;
+  nav_goal_loc_ = loc;
   nav_goal_angle_ = angle;
 
   nav_complete_ = 0;
@@ -94,7 +94,7 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
   robot_vel_ = vel;
   robot_omega_ = ang_vel;
 
-  if( nav_goal_loc_[0]-loc[0] < nav_goal_loc_tol_ &&
+  if( nav_goal_loc_[0]-(loc[0] - 0.6) < nav_goal_loc_tol_ &&
       nav_complete_ == 0)
   {
     nav_complete_ = 1;
