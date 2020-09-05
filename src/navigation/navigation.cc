@@ -133,7 +133,11 @@ void Navigation::Run() {
     command.header.stamp = ros::Time::now();
     command.velocity = commmanded_velocity;
     command.curvature = commmanded_curvature;
-    drive_pub_.publish(command);
+
+    command_history_.push_back(command); // Add to the classes command history deck
+    drive_pub_.publish(command);          // Publish command to ROS
+
+    return;
   }
 }
 
