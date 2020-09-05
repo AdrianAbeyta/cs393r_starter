@@ -107,6 +107,8 @@ class Navigation {
   const float odom_offset_ = 0.0;  // m TODO-find how to remove this
   // Command history
   std::deque<amrl_msgs::AckermannCurvatureDriveMsg> command_history_;
+  // Controller+actuation lag time
+  const float = 0.15 // s
   
 };
 
