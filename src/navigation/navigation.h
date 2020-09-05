@@ -68,6 +68,10 @@ class Navigation {
   // Used to set the next target pose.
   void SetNavGoal(const Eigen::Vector2f& loc, float angle);
 
+  ////HELMS DEEP ADDITIONS////
+  // Predict the velocity the car will have after the lagged commands are executed
+  double PredictedRobotVelocity();
+
  private:
 
   // Current robot location.

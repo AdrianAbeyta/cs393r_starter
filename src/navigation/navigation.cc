@@ -47,7 +47,7 @@ ros::Publisher drive_pub_;
 ros::Publisher viz_pub_;
 VisualizationMsg local_viz_msg_;
 VisualizationMsg global_viz_msg_;
-AckermannCurvatureDriveMsg drive_msg_;
+AckermannCurvatureDriveMsg drive_msg_;  //TODO -use this to construct the output message
 // Epsilon value for handling limited numerical precision.
 const float kEpsilon = 1e-5;
 } //namespace
@@ -106,6 +106,14 @@ void Navigation::ObservePointCloud(const vector<Vector2f>& cloud,
                                    double time) {
 }
 
+double Navigation::PredictedRobotVelocity(){
+  auto commandIsOld = [ this ]
+                      ( const AckermannCurvatureDriveMsg& command ) 
+                      { return ros::Time::now() - command.header.stamp  > actuation_lag_time_; }; 
+  command_history_.remove_if( commandIsOld );
+  return 0.0;
+}
+
 void Navigation::Run() {
   if(!nav_complete_)
   {
@@ -134,7 +142,7 @@ void Navigation::Run() {
     command.velocity = commmanded_velocity;
     command.curvature = commmanded_curvature;
 
-    command_history_.push_back(command); // Add to the classes command history deck
+    command_history_.push_back(command);  // Add to the classes command history list
     drive_pub_.publish(command);          // Publish command to ROS
 
     return;
