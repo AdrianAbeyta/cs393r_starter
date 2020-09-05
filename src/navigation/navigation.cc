@@ -110,8 +110,10 @@ double Navigation::PredictedRobotVelocity(){
   auto commandIsOld = [ this ]
                       ( const AckermannCurvatureDriveMsg& command ) 
                       { return ros::Time::now() - command.header.stamp  > actuation_lag_time_; }; 
+
   command_history_.remove_if( commandIsOld );
-  return 0.0;
+
+  return command_history_.front().velocity;
 }
 
 void Navigation::Run() {
