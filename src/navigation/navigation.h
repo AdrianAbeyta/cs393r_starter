@@ -108,7 +108,7 @@ class Navigation {
   // Command history
   std::deque<amrl_msgs::AckermannCurvatureDriveMsg> command_history_;
   // Controller+actuation lag time
-  const float = 0.15 // s
+  const ros::Duration actuation_lag_time_ = ros::Duration(0.15); // s
   
 };
 
