@@ -20,8 +20,11 @@
 //========================================================================
 
 #include <vector>
-
+#include <deque> 
+  
 #include "eigen3/Eigen/Dense"
+
+#include "amrl_msgs/AckermannCurvatureDriveMsg.h"
 
 #ifndef NAVIGATION_H
 #define NAVIGATION_H
@@ -96,12 +99,14 @@ class Navigation {
   const float max_velocity_ = 1.0; // m/s
   // Max acceleration
   const float max_acceleration_ = 4.0; // m/s2
-  //Max deceleration
+  // Max deceleration
   const float max_deceleration_ = 4.0; // m/s2
-  //Timestamp
+  // Timestamp
   const float time_step_ = 1.0/20; // s
   // Odom calibration offset 
   const float odom_offset_ = 0.0;  // m TODO-find how to remove this
+  // Command history
+  std::deque<amrl_msgs::AckermannCurvatureDriveMsg> command_history_;
   
 };
 
