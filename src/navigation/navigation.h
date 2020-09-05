@@ -20,7 +20,7 @@
 //========================================================================
 
 #include <vector>
-#include <deque> 
+#include <list> 
   
 #include "eigen3/Eigen/Dense"
 
@@ -106,7 +106,7 @@ class Navigation {
   // Odom calibration offset 
   const float odom_offset_ = 0.0;  // m TODO-find how to remove this
   // Command history
-  std::deque<amrl_msgs::AckermannCurvatureDriveMsg> command_history_;
+  std::list<amrl_msgs::AckermannCurvatureDriveMsg> command_history_;
   // Controller+actuation lag time
   const ros::Duration actuation_lag_time_ = ros::Duration(0.15); // s
   
