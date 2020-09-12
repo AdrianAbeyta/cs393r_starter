@@ -96,23 +96,41 @@ class Navigation {
   // Navigation goal angle.
   float nav_goal_angle_;
 
-  ////HELMS DEEP ADDITIONS////
+ 
   // Navigation goal location tolerance
-  const float nav_goal_loc_tol_ = 0.05; //TODO- make configurable parameter
+  const float nav_goal_loc_tol_ = 0.05; // m
   // Navigation goal angle tolerance
-  const float nav_goal_angle_tol_ = 0.1; //TODO- make configurable parameter
+  const float nav_goal_angle_tol_ = 0.1; // rad
+
   // Max velocity
   const float max_velocity_ = 1.0; // m/s
   // Max acceleration
   const float max_acceleration_ = 4.0; // m/s2
   // Max deceleration
   const float min_acceleration_ = -4.0; // m/s2
-  // Timestamp
-  const float time_step_ = 1.0/20; // s
-  // Command history
+   // Command history
   std::list<AccelerationCommand> command_history_;
   // Controller+actuation lag time
   const ros::Duration actuation_lag_time_ = ros::Duration(0.15); // s
+
+  // Maximum curvature
+  const float max_curvature_ = 1; // 1/m
+  // Minumum curvature
+  const float min_curvature_ = -1; // 1/m
+  // The step size, in radians, to take between potential steering commands
+  const float curvature_granularity_ = 0.1 // m
+  // Curvature options (samples)
+  std::vector<float> curvature_samples_;
+  
+  // Run function call rate
+  const float time_step_ = 1.0/20; // s
+
+
+  ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS////
+  
+ 
   
 };
 
