@@ -76,9 +76,26 @@ class Navigation {
   // Predict the velocity the car will have after the lagged commands are executed
   double PredictedRobotVelocity();
   // Generate curvature samples
+  /**
+  * @note Should always produce one sample at -curvature_limit_, 0, and curvature_limit_
+  *
+  * @brief Calculate the discrete curvature samples which represent potential path direction options
+  * @see Mutates curvature_samples_
+  **/
   void GenerateCurvatureSamples();
-  // Publish velocity commands based on TOC logic
+
+  /**
+  * @note 
+  *
+  * @brief Publish velocity commands based on TOC logic
+  * @param curvature The commanded curvature
+  * @param robot_velocity The current robot velocity- should be lag compensated
+  * @param distance_to_local_goal The distance along the arc to the end of the arc
+  * @param distance_needed_to_stop The distancce needed to stop given kinematic limits 
+  * @see Mutates drive_msg_ and command_history_
+  **/
   void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop  );
+
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -126,7 +143,7 @@ class Navigation {
   float const curvature_limit_ = 1.0;
   // How many samples you want on each side of zero (i.e. min to 0 and then 0 to max)
   int const curvature_sample_count_= 10; // 
-  // Curvature options (samples)
+  // Curvature samples
   std::vector<float> curvature_samples_;
 
   // carrot
