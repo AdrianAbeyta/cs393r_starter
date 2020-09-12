@@ -71,8 +71,15 @@ class Navigation {
   void SetNavGoal(const Eigen::Vector2f& loc, float angle);
 
   ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS////
   // Predict the velocity the car will have after the lagged commands are executed
   double PredictedRobotVelocity();
+  // Generate curvature samples
+  void GenerateCurvatureSamples();
+  ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS////
 
  private:
 
@@ -112,13 +119,10 @@ class Navigation {
   std::list<AccelerationCommand> command_history_;
   // Controller+actuation lag time
   const ros::Duration actuation_lag_time_ = ros::Duration(0.15); // s
-
-  // Maximum curvature
-  const float max_curvature_ = 1; // 1/m
-  // Minumum curvature
-  const float min_curvature_ = -1; // 1/m
-  // The step size, in radians, to take between potential steering commands
-  const float curvature_granularity_ = 0.1 // m
+  // Curvature - assume symmetry (i.e. max=-min)
+  const float curvature_limit_ = 1.0;
+  // How many samples you want on each side of zero (i.e. min to 0 and then 0 to max)
+  const int curvature_sample_count_= 10; // 
   // Curvature options (samples)
   std::vector<float> curvature_samples_;
   

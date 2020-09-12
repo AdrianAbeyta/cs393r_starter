@@ -70,6 +70,12 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
   global_viz_msg_ = visualization::NewVisualizationMessage(
       "map", "navigation_global");
   InitRosHeader("base_link", &drive_msg_.header);
+
+  ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS////
+  GenerateCurvatureSamples();
+
 }
 
 void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
@@ -128,6 +134,16 @@ double Navigation::PredictedRobotVelocity(){
   }
 
   return predicted_velocity;
+}
+
+void Navigation::GenerateCurvatureSamples(){
+  curvature_samples_.resize( 2*curvature_sample_count_ + 1 );
+  for( size_t i=0; i < curvature_samples_.size(); ++i )
+  {
+    curvature_samples_[i] = ( -curvature_limit_+ i*(curvature_limit_/curvature_sample_count_) );
+  }
+
+  return;
 }
 
 void Navigation::Run() {
