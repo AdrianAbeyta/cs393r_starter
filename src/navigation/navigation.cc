@@ -125,9 +125,9 @@ double Navigation::PredictedRobotVelocity(){
 void Navigation::Run() {
   if(!nav_complete_)
   {
-    const float predicted_robot_vel = PredictedRobotVelocity();
-    const float distance_to_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
-    const float distance_needed_to_stop = 
+    float const predicted_robot_vel = PredictedRobotVelocity();
+    float const distance_to_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
+    float const distance_needed_to_stop = 
       (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
     AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Default "Cruise" means acceleration = 0.0
@@ -138,7 +138,7 @@ void Navigation::Run() {
       commanded_acceleration.acceleration = max_acceleration_;  // Accelerate
     }else if( distance_to_goal <= distance_needed_to_stop )
     {
-      const float predicted_velocity = predicted_robot_vel + min_acceleration_*time_step_;
+      float const predicted_velocity = predicted_robot_vel + min_acceleration_*time_step_;
       commanded_acceleration.acceleration = predicted_velocity<0.0 ? 0.0 : min_acceleration_;    // Decelerate
     }
 
