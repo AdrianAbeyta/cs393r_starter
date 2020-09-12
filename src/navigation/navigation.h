@@ -105,35 +105,35 @@ class Navigation {
 
  
   // Navigation goal location tolerance
-  const float nav_goal_loc_tol_ = 0.05; // m
+  float const nav_goal_loc_tol_ = 0.05; // m
   // Navigation goal angle tolerance
-  const float nav_goal_angle_tol_ = 0.1; // rad
+  float const nav_goal_angle_tol_ = 0.1; // rad
 
   // Max velocity
-  const float max_velocity_ = 1.0; // m/s
+  float const max_velocity_ = 1.0; // m/s
   // Max acceleration
-  const float max_acceleration_ = 4.0; // m/s2
+  float const max_acceleration_ = 4.0; // m/s2
   // Max deceleration
-  const float min_acceleration_ = -4.0; // m/s2
+  float const min_acceleration_ = -4.0; // m/s2
    // Command history
   std::list<AccelerationCommand> command_history_;
   // Controller+actuation lag time
-  const ros::Duration actuation_lag_time_ = ros::Duration(0.15); // s
+  ros::Duration const actuation_lag_time_ = ros::Duration(0.15); // s
 
   // Curvature - assume symmetry (i.e. max=-min)
-  const float curvature_limit_ = 1.0;
+  float const curvature_limit_ = 1.0;
   // How many samples you want on each side of zero (i.e. min to 0 and then 0 to max)
-  const int curvature_sample_count_= 10; // 
+  int const curvature_sample_count_= 10; // 
   // Curvature options (samples)
   std::vector<float> curvature_samples_;
 
   // Lookahead
-  const float lookahead_ = 2.0; //m
+  float const lookahead_ = 2.0; //m
   
 
 
   // Run function call rate
-  const float time_step_ = 1.0/20; // s
+  float const time_step_ = 1.0/20; // s
 
 
   ////HELMS DEEP ADDITIONS////
