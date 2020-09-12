@@ -127,7 +127,7 @@ void Navigation::Run() {
   {
     const float predicted_robot_vel = PredictedRobotVelocity(); //robot_vel_[0]; 
     const float distance_to_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
-    const float distance_needed_to_stop = (predicted_robot_vel*predicted_robot_vel)/(2*max_deceleration_); //TODO- make distance_needed_to_stop
+    const float distance_needed_to_stop = -(predicted_robot_vel*predicted_robot_vel)/(2*min_acceleration_); 
     
     float commmanded_velocity;
     const float commmanded_curvature = 0;
@@ -140,7 +140,7 @@ void Navigation::Run() {
       commanded_acceleration.acceleration = max_acceleration_;
     }else if( distance_to_goal <= distance_needed_to_stop )
     {
-      const float predicted_velocity = predicted_robot_vel - max_deceleration_*time_step_;
+      const float predicted_velocity = predicted_robot_vel + min_acceleration_*time_step_;
       commmanded_velocity = predicted_velocity<0.0 ? 0.0 : predicted_velocity;    // Decelerate
       commanded_acceleration.acceleration = -max_acceleration_;
     }else
