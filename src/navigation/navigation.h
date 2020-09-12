@@ -43,6 +43,10 @@ struct PathOption {
   Eigen::Vector2f closest_point;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
+struct AccelerationCommand {
+  float acceleration;
+  ros::Time stamp;
+};
 
 class Navigation {
  public:
@@ -110,7 +114,7 @@ class Navigation {
   // Odom calibration offset 
   const float odom_offset_ = 0.0;  // m TODO-find how to remove this
   // Command history
-  std::list<amrl_msgs::AckermannCurvatureDriveMsg> command_history_;
+  std::list<AccelerationCommand> command_history_;
   // Controller+actuation lag time
   const ros::Duration actuation_lag_time_ = ros::Duration(0.15); // s
   
