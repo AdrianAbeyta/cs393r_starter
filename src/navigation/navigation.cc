@@ -125,7 +125,7 @@ double Navigation::PredictedRobotVelocity(){
 void Navigation::Run() {
   if(!nav_complete_)
   {
-    const float predicted_robot_vel = robot_vel_[0]; //PredictedRobotVelocity();
+    const float predicted_robot_vel = PredictedRobotVelocity(); //robot_vel_[0]; 
     const float distance_to_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
     const float distance_needed_to_stop = (predicted_robot_vel*predicted_robot_vel)/(2*max_deceleration_); //TODO- make distance_needed_to_stop
     
