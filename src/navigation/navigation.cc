@@ -131,18 +131,22 @@ void Navigation::Run() {
     
     float commmanded_velocity;
     const float commmanded_curvature = 0;
+    AccelerationCommand commanded_acceleration;
 
     if( distance_to_goal > distance_needed_to_stop &&
         predicted_robot_vel < max_velocity_ )
     {
       commmanded_velocity = predicted_robot_vel + max_acceleration_*time_step_;   // Accelerate
+      commanded_acceleration.acceleration = max_acceleration_;
     }else if( distance_to_goal <= distance_needed_to_stop )
     {
       const float predicted_velocity = predicted_robot_vel - max_deceleration_*time_step_;
       commmanded_velocity = predicted_velocity<0.0 ? 0.0 : predicted_velocity;    // Decelerate
+      commanded_acceleration.acceleration = -max_acceleration_;
     }else
     {
       commmanded_velocity = max_velocity_;   // Cruise
+      commanded_acceleration.acceleration = 0.0;
     }
 
     AckermannCurvatureDriveMsg command;
@@ -151,7 +155,7 @@ void Navigation::Run() {
     command.velocity = commmanded_velocity;
     command.curvature = commmanded_curvature;
 
-    // command_history_.push_back(command);  // Add to the classes command history list
+    command_history_.push_back(commanded_acceleration);  // Add to the classes command history list
     drive_pub_.publish(command);          // Publish command to ROS
   }
 
