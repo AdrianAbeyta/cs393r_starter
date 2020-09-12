@@ -146,22 +146,22 @@ void Navigation::GenerateCurvatureSamples(){
   return;
 }
 
-void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_goal, const float& distance_needed_to_stop ){
+void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop ){
   AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Default "Cruise" means acceleration = 0.0
 
   if( distance_to_goal > distance_needed_to_stop &&
-      predicted_robot_vel < max_velocity_ )
+      robot_velocity < max_velocity_ )
   {
     commanded_acceleration.acceleration = max_acceleration_;  // Accelerate
   }else if( distance_to_goal <= distance_needed_to_stop )
   {
-    float const predicted_velocity = predicted_robot_vel + min_acceleration_*time_step_;
+    float const predicted_velocity = robot_velocity + min_acceleration_*time_step_;
     commanded_acceleration.acceleration = predicted_velocity<0.0 ? 0.0 : min_acceleration_;    // Decelerate
   }
 
   drive_msg_.header.frame_id = "base_link";
   drive_msg_.header.stamp = commanded_acceleration.stamp;
-  drive_msg_.velocity = predicted_robot_vel + commanded_acceleration.acceleration*time_step_;
+  drive_msg_.velocity = robot_velocity + commanded_acceleration.acceleration*time_step_;
   drive_msg_.curvature = curvature;
 
   command_history_.push_back(commanded_acceleration);  
@@ -177,26 +177,7 @@ void Navigation::Run() {
     float const distance_needed_to_stop = 
       (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
-    AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Default "Cruise" means acceleration = 0.0
-
-    if( distance_to_goal > distance_needed_to_stop &&
-        predicted_robot_vel < max_velocity_ )
-    {
-      commanded_acceleration.acceleration = max_acceleration_;  // Accelerate
-    }else if( distance_to_goal <= distance_needed_to_stop )
-    {
-      float const predicted_velocity = predicted_robot_vel + min_acceleration_*time_step_;
-      commanded_acceleration.acceleration = predicted_velocity<0.0 ? 0.0 : min_acceleration_;    // Decelerate
-    }
-
-    drive_msg_.header.frame_id = "base_link";
-    drive_msg_.header.stamp = commanded_acceleration.stamp;
-    drive_msg_.velocity = predicted_robot_vel + commanded_acceleration.acceleration*time_step_;
-    drive_msg_.curvature = 0.0;
-
-    command_history_.push_back(commanded_acceleration);  
-
-    drive_pub_.publish(drive_msg_);        
+    TOC(0.0, predicted_robot_vel, distance_to_goal, distance_needed_to_stop );   
   }
 
   return;

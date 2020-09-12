@@ -78,7 +78,7 @@ class Navigation {
   // Generate curvature samples
   void GenerateCurvatureSamples();
   // Publish velocity commands based on TOC logic
-  void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_goal, const float& distance_needed_to_stop  );
+  void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop  );
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -129,8 +129,8 @@ class Navigation {
   // Curvature options (samples)
   std::vector<float> curvature_samples_;
 
-  // Lookahead
-  float const lookahead_ = 2.0; //m
+  // carrot
+  float const carrot_ = 3.0; //m
   
 
 
