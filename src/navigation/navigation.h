@@ -24,8 +24,6 @@
   
 #include "eigen3/Eigen/Dense"
 
-#include "amrl_msgs/AckermannCurvatureDriveMsg.h"
-
 #ifndef NAVIGATION_H
 #define NAVIGATION_H
 

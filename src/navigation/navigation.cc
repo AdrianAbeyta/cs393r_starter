@@ -103,14 +103,12 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
 }
 
 void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud_,double time ) {
- 
- //VisualizationMsg visualize_point_cloud
   visualization::ClearVisualizationMsg( local_viz_msg_ );
- //Itterates through each point in the pointcloud 
   for ( const auto& point: point_cloud_ )
   {
     visualization::DrawPoint( point, 252, local_viz_msg_ );
   }
+
   viz_pub_.publish( local_viz_msg_ );
   
   return;
@@ -158,8 +156,9 @@ void Navigation::Run() {
     command.velocity = predicted_robot_vel + commanded_acceleration.acceleration*time_step_;
     command.curvature = 0.0;
 
-    command_history_.push_back(commanded_acceleration);  // Add to the classes command history list
-    drive_pub_.publish(command);          // Publish command to ROS
+    command_history_.push_back(commanded_acceleration);  
+    
+    drive_pub_.publish(command);        
   }
 
   return;
