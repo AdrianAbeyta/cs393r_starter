@@ -47,6 +47,9 @@
 #include "shared/ros/ros_helpers.h"
 
 #include "navigation.h"
+#include "amrl_msgs/VisualizationMsg.h"
+
+//Helms Deep Additions
 
 using math_util::DegToRad;
 using math_util::RadToDeg;
@@ -59,6 +62,7 @@ using ros_helpers::SetRosVector;
 using std::string;
 using std::vector;
 using Eigen::Vector2f;
+using amrl_msgs::VisualizationMsg;
 
 // Create command line arguments
 DEFINE_string(laser_topic, "scan", "Name of ROS topic for LIDAR data");
@@ -73,19 +77,53 @@ bool run_ = true;
 sensor_msgs::LaserScan last_laser_msg_;
 Navigation* navigation_ = nullptr;
 
-void LaserCallback(const sensor_msgs::LaserScan& msg) {
-  if (FLAGS_v > 0) {
+void LaserCallback(const sensor_msgs::LaserScan& msg) 
+{
+
+  //ROS_INFO_STREAM("Recive Laserscan @; "<< msg.header.stamp.nsec);
+  
+  //ROS_INFO_STREAM("Recive Laserscan @; "<< msg.header.stamp.nsec);
+
+  if (FLAGS_v > 0) 
+  {
     printf("Laser t=%f, dt=%f\n",
            msg.header.stamp.toSec(),
            GetWallTime() - msg.header.stamp.toSec());
   }
+
+  //Calulate number of scans
+  const int number_of_scans = ( msg.angle_max - msg.angle_min)/(msg.angle_increment );
+  
   // Location of the laser on the robot. Assumes the laser is forward-facing.
   const Vector2f kLaserLoc(0.2, 0);
-
+  
   static vector<Vector2f> point_cloud_;
-  // TODO Convert the LaserScan to a point cloud
-  navigation_->ObservePointCloud(point_cloud_, msg.header.stamp.toSec());
+  
+  
+  point_cloud_.clear();
+ 
+  //Itterate over rays in the scan
+  for ( int i=0; i < number_of_scans; ++i )
+  {
+
+    //Collect x ,y, and angles from laser scan.
+    double const theta = msg.angle_min + msg.angle_increment*i;
+    double const x=cos(theta)*msg.ranges[i];
+    double const y=sin(theta)*msg.ranges[i];
+    
+    //Transform to vector, account for position of laser. 
+    Vector2f temp( x, y );
+    
+    temp += kLaserLoc;
+     
+    point_cloud_.push_back( temp );
+
+  }
+
+  // Itterates through each point and publishes visualization message
+  navigation_->ObservePointCloud( point_cloud_, msg.header.stamp.toSec() );
   last_laser_msg_ = msg;
+  
 }
 
 void OdometryCallback(const nav_msgs::Odometry& msg) {
