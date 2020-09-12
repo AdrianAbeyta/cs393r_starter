@@ -77,6 +77,8 @@ class Navigation {
   double PredictedRobotVelocity();
   // Generate curvature samples
   void GenerateCurvatureSamples();
+  // Publish velocity commands based on TOC logic
+  void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_goal, const float& distance_needed_to_stop  );
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////

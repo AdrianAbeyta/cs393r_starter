@@ -140,10 +140,33 @@ void Navigation::GenerateCurvatureSamples(){
   curvature_samples_.resize( 2*curvature_sample_count_ + 1 );
   for( size_t i=0; i < curvature_samples_.size(); ++i )
   {
-    curvature_samples_[i] = ( -curvature_limit_+ i*(curvature_limit_/curvature_sample_count_) );
+    curvature_samples_[i] = -curvature_limit_ + i*(curvature_limit_/curvature_sample_count_);
   }
 
   return;
+}
+
+void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_goal, const float& distance_needed_to_stop ){
+  AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Default "Cruise" means acceleration = 0.0
+
+  if( distance_to_goal > distance_needed_to_stop &&
+      predicted_robot_vel < max_velocity_ )
+  {
+    commanded_acceleration.acceleration = max_acceleration_;  // Accelerate
+  }else if( distance_to_goal <= distance_needed_to_stop )
+  {
+    float const predicted_velocity = predicted_robot_vel + min_acceleration_*time_step_;
+    commanded_acceleration.acceleration = predicted_velocity<0.0 ? 0.0 : min_acceleration_;    // Decelerate
+  }
+
+  drive_msg_.header.frame_id = "base_link";
+  drive_msg_.header.stamp = commanded_acceleration.stamp;
+  drive_msg_.velocity = predicted_robot_vel + commanded_acceleration.acceleration*time_step_;
+  drive_msg_.curvature = curvature;
+
+  command_history_.push_back(commanded_acceleration);  
+
+  drive_pub_.publish(drive_msg_);
 }
 
 void Navigation::Run() {
