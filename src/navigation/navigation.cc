@@ -47,7 +47,7 @@ ros::Publisher drive_pub_;
 ros::Publisher viz_pub_;
 VisualizationMsg local_viz_msg_;
 VisualizationMsg global_viz_msg_;
-AckermannCurvatureDriveMsg drive_msg_;  //TODO -use this to construct the output message
+AckermannCurvatureDriveMsg drive_msg_;  
 // Epsilon value for handling limited numerical precision.
 const float kEpsilon = 1e-5;
 } //namespace
@@ -150,15 +150,14 @@ void Navigation::Run() {
       commanded_acceleration.acceleration = predicted_velocity<0.0 ? 0.0 : min_acceleration_;    // Decelerate
     }
 
-    AckermannCurvatureDriveMsg command;
-    command.header.frame_id = "base_link";
-    command.header.stamp = commanded_acceleration.stamp;
-    command.velocity = predicted_robot_vel + commanded_acceleration.acceleration*time_step_;
-    command.curvature = 0.0;
+    drive_msg_.header.frame_id = "base_link";
+    drive_msg_.header.stamp = commanded_acceleration.stamp;
+    drive_msg_.velocity = predicted_robot_vel + commanded_acceleration.acceleration*time_step_;
+    drive_msg_.curvature = 0.0;
 
     command_history_.push_back(commanded_acceleration);  
-    
-    drive_pub_.publish(command);        
+
+    drive_pub_.publish(drive_msg_);        
   }
 
   return;
