@@ -129,31 +129,23 @@ void Navigation::Run() {
     const float distance_to_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
     const float distance_needed_to_stop = -(predicted_robot_vel*predicted_robot_vel)/(2*min_acceleration_); 
     
-    float commmanded_velocity;
-    const float commmanded_curvature = 0;
-    AccelerationCommand commanded_acceleration;
+    AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Default "Cruise" means acceleration = 0.0
 
     if( distance_to_goal > distance_needed_to_stop &&
         predicted_robot_vel < max_velocity_ )
     {
-      commmanded_velocity = predicted_robot_vel + max_acceleration_*time_step_;   // Accelerate
-      commanded_acceleration.acceleration = max_acceleration_;
+      commanded_acceleration.acceleration = max_acceleration_;  // Accelerate
     }else if( distance_to_goal <= distance_needed_to_stop )
     {
       const float predicted_velocity = predicted_robot_vel + min_acceleration_*time_step_;
-      commmanded_velocity = predicted_velocity<0.0 ? 0.0 : predicted_velocity;    // Decelerate
-      commanded_acceleration.acceleration = -max_acceleration_;
-    }else
-    {
-      commmanded_velocity = max_velocity_;   // Cruise
-      commanded_acceleration.acceleration = 0.0;
+      commanded_acceleration.acceleration = predicted_velocity<0.0 ? 0.0 : min_acceleration_;    // Decelerate
     }
 
     AckermannCurvatureDriveMsg command;
     command.header.frame_id = "base_link";
-    command.header.stamp = ros::Time::now();
-    command.velocity = commmanded_velocity;
-    command.curvature = commmanded_curvature;
+    command.header.stamp = commanded_acceleration.stamp;
+    command.velocity = predicted_robot_vel + commanded_acceleration.acceleration*time_step_;
+    command.curvature = 0.0;
 
     command_history_.push_back(commanded_acceleration);  // Add to the classes command history list
     drive_pub_.publish(command);          // Publish command to ROS
