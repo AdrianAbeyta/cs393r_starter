@@ -149,11 +149,11 @@ void Navigation::GenerateCurvatureSamples(){
 void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop ){
   AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Default "Cruise" means acceleration = 0.0
 
-  if( distance_to_goal > distance_needed_to_stop &&
+  if( distance_to_local_goal > distance_needed_to_stop &&
       robot_velocity < max_velocity_ )
   {
     commanded_acceleration.acceleration = max_acceleration_;  // Accelerate
-  }else if( distance_to_goal <= distance_needed_to_stop )
+  }else if( distance_to_local_goal <= distance_needed_to_stop )
   {
     float const predicted_velocity = robot_velocity + min_acceleration_*time_step_;
     commanded_acceleration.acceleration = predicted_velocity<0.0 ? 0.0 : min_acceleration_;    // Decelerate
@@ -173,11 +173,11 @@ void Navigation::Run() {
   if(!nav_complete_)
   {
     float const predicted_robot_vel = PredictedRobotVelocity();
-    float const distance_to_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
+    float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
     float const distance_needed_to_stop = 
       (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
-    TOC(0.0, predicted_robot_vel, distance_to_goal, distance_needed_to_stop );   
+    TOC(0.5, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
   }
 
   return;
