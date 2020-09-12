@@ -106,9 +106,9 @@ class Navigation {
   // Max velocity
   const float max_velocity_ = 1.0; // m/s
   // Max acceleration
-  const float max_acceleration_ = 1.0; // m/s2
+  const float max_acceleration_ = 4.0; // m/s2
   // Max deceleration
-  const float min_acceleration_ = -1.0; // m/s2
+  const float min_acceleration_ = -4.0; // m/s2
   // Timestamp
   const float time_step_ = 1.0/20; // s
   // Odom calibration offset 
