@@ -109,8 +109,6 @@ class Navigation {
   const float min_acceleration_ = -4.0; // m/s2
   // Timestamp
   const float time_step_ = 1.0/20; // s
-  // Odom calibration offset 
-  const float odom_offset_ = 0.0;  // m TODO-find how to remove this
   // Command history
   std::list<AccelerationCommand> command_history_;
   // Controller+actuation lag time
