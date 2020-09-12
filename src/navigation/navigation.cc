@@ -108,12 +108,18 @@ void Navigation::ObservePointCloud(const vector<Vector2f>& cloud,
 
 double Navigation::PredictedRobotVelocity(){
   auto commandIsOld = [ this ]
-                      ( const AckermannCurvatureDriveMsg& command ) 
-                      { return ros::Time::now() - command.header.stamp  > actuation_lag_time_; }; 
+                      ( const AccelerationCommand& command ) 
+                      { return ros::Time::now() - command.stamp > actuation_lag_time_; }; 
 
   command_history_.remove_if( commandIsOld );
 
-  return command_history_.front().velocity;
+  float predicted_velocity = robot_vel_[0];
+  for( const auto& command: command_history_)
+  {
+    predicted_velocity += command.acceleration * time_step_;
+  }
+
+  return predicted_velocity;
 }
 
 void Navigation::Run() {
@@ -145,7 +151,7 @@ void Navigation::Run() {
     command.velocity = commmanded_velocity;
     command.curvature = commmanded_curvature;
 
-    command_history_.push_back(command);  // Add to the classes command history list
+    // command_history_.push_back(command);  // Add to the classes command history list
     drive_pub_.publish(command);          // Publish command to ROS
   }
 
