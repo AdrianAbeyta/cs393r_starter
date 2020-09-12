@@ -77,7 +77,7 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   nav_goal_angle_ = angle;
 
   nav_complete_ = 0;
-
+  
   return;
 }
 
@@ -102,8 +102,18 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
   return;
 }
 
-void Navigation::ObservePointCloud(const vector<Vector2f>& cloud,
-                                   double time) {
+void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud_,double time ) {
+ 
+ //VisualizationMsg visualize_point_cloud
+  visualization::ClearVisualizationMsg( local_viz_msg_ );
+ //Itterates through each point in the pointcloud 
+  for ( const auto& point: point_cloud_ )
+  {
+    visualization::DrawPoint( point, 252, local_viz_msg_ );
+  }
+  viz_pub_.publish( local_viz_msg_ );
+  
+  return;
 }
 
 double Navigation::PredictedRobotVelocity(){
