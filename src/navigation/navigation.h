@@ -119,13 +119,19 @@ class Navigation {
   std::list<AccelerationCommand> command_history_;
   // Controller+actuation lag time
   const ros::Duration actuation_lag_time_ = ros::Duration(0.15); // s
+
   // Curvature - assume symmetry (i.e. max=-min)
   const float curvature_limit_ = 1.0;
   // How many samples you want on each side of zero (i.e. min to 0 and then 0 to max)
   const int curvature_sample_count_= 10; // 
   // Curvature options (samples)
   std::vector<float> curvature_samples_;
+
+  // Lookahead
+  const float lookahead_ = 2.0; //m
   
+
+
   // Run function call rate
   const float time_step_ = 1.0/20; // s
 
