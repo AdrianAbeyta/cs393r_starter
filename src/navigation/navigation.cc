@@ -172,11 +172,19 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
   visualization::ClearVisualizationMsg( local_viz_msg_ );
   for(const auto& point: point_cloud_)
   { 
-    float const point_curvature = 1/(pole-point).norm();
-    float const point_position = atan2( point[1], point[0] ); // Thinking in polar coords!!!
+    Vector2f pole_local_point = pole-point;
+    float const point_curvature = 1/(pole_local_point).norm();
+
+    float point_position; // Thinking in polar coords!!!
+    if (path_option.curvature > 0)
+    {
+      point_position = fabs(atan2( pole_local_point[1], pole_local_point[0] )-M_PI/2); 
+    } else {
+       point_position = fabs(atan2( pole_local_point[1], pole_local_point[0] )+M_PI/2);
+    }
 
     // Only consider points that we can reach on the arc given the lookahead distance
-    if(fabs(lookahead_distance*path_option.curvature) > fabs(point_position))
+    if( point_position < fabs(lookahead_distance*path_option.curvature) )
     {
       if( point_curvature < corner_curvatures[3] &&
           point_curvature > corner_curvatures[2]) 
@@ -222,8 +230,8 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  int path_option_id = 0;
-  EvaluatePathOption(path_options_[path_option_id], 0.5);
+  int path_option_id = 15;
+  EvaluatePathOption(path_options_[path_option_id], 2.0);
   if(!nav_complete_)
   {
     float const predicted_robot_vel = PredictedRobotVelocity();
