@@ -75,7 +75,7 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   GenerateCurvatureSamples();
-
+  //TODO check that car dimensions are logical
 }
 
 void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
@@ -109,15 +109,15 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
 }
 
 void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double time ) {
-  visualization::ClearVisualizationMsg( local_viz_msg_ );
-  for ( const auto& point: point_cloud_ )
-  {
-    visualization::DrawPoint( point, 252, local_viz_msg_ );
-  }
+  // visualization::ClearVisualizationMsg( local_viz_msg_ );
+  // for ( const auto& point: point_cloud_ )
+  // {
+  //   visualization::DrawPoint( point, 252, local_viz_msg_ );
+  // }
 
   point_cloud_ = point_cloud; 
   
-  viz_pub_.publish( local_viz_msg_ );
+  // viz_pub_.publish( local_viz_msg_ );
   
   return;
 }
@@ -150,6 +150,50 @@ void Navigation::GenerateCurvatureSamples(){
 }
 
 float Navigation::FreePathLength( const float& curvature, const float& lookahead_distance ) const{
+  // For each point in pointcloud
+  // Check inner side collision
+  // Check frontal collision
+  // Check outer side collision
+  Vector2f const p1(length_-(length_-wheel_base_)/2, -width_/2);
+  Vector2f const p2(-(length_-wheel_base_)/2, -width_/2);
+  Vector2f const p3(length_-(length_-wheel_base_)/2, width_/2);
+  Vector2f const p4(-(length_-wheel_base_)/2, width_/2);
+
+  Vector2f const pole( 0, 1/curvature ); 
+  float const c1 = 1/(pole-p1).norm();
+  float const c2 = 1/(pole-p2).norm();
+  float const c3 = 1/(pole-p3).norm();
+  float const c4 = 1/(pole-p4).norm();
+
+  visualization::ClearVisualizationMsg( local_viz_msg_ );
+  for(const auto& point: point_cloud_)
+  { 
+    float const point_curvature = 1/(pole-point).norm();
+    if( point_curvature > fabs(c4) )
+    {
+      visualization::DrawPoint( point, 65280, local_viz_msg_ );
+    }else if(point_curvature < fabs(c4) &&
+             point_curvature > fabs(c3)) 
+    {
+      visualization::DrawCross( point, 0.02, 16711680, local_viz_msg_ );
+    }
+    else if(point_curvature < fabs(c3) &&
+             point_curvature > fabs(c2)) 
+    {
+      visualization::DrawPoint( point, 255, local_viz_msg_ );
+    }
+    else if(point_curvature < fabs(c2) &&
+             point_curvature > fabs(c1)) 
+    {
+      visualization::DrawCross( point, 0.02, 16711680, local_viz_msg_ );
+    }
+    else if(point_curvature < fabs(c1)) 
+    {
+      visualization::DrawPoint( point, 65280, local_viz_msg_ );
+    }
+  }
+
+  viz_pub_.publish( local_viz_msg_ );
   return 0.0;
 }
 
@@ -177,6 +221,8 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
+  float const curvature = 1.0;
+  FreePathLength(curvature, 2);
   if(!nav_complete_)
   {
     float const predicted_robot_vel = PredictedRobotVelocity();
@@ -184,7 +230,7 @@ void Navigation::Run() {
     float const distance_needed_to_stop = 
       (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
-    TOC(0.5, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
+    TOC(curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
   }
 
   return;
