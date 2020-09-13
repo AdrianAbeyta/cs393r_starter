@@ -86,31 +86,28 @@ void LaserCallback(const sensor_msgs::LaserScan& msg)
            GetWallTime() - msg.header.stamp.toSec());
   }
 
-  const int number_of_scans = ( msg.angle_max - msg.angle_min)/(msg.angle_increment );
+  int const number_of_scans = ( msg.angle_max - msg.angle_min)/msg.angle_increment;
   
-  // Location of the laser on the robot. Assumes the laser is forward-facing.
-  const Vector2f kLaserLoc(0.2, 0);
+  Vector2f const kLaserLoc(0.2, 0);  // Location of the laser on the robot. Assumes the laser is forward-facing.
   
   static vector<Vector2f> point_cloud_;
   point_cloud_.clear();
  
-  //Iterate over rays in the scan
+  //Iterate over rays in the scan and turn into base_link local point cloud points
   for ( int i=0; i < number_of_scans; ++i )
   {
-    double const theta = msg.angle_min + msg.angle_increment*i;
-    double const x = cos( theta )*msg.ranges[i];
-    double const y = sin( theta )*msg.ranges[i];
+    double const theta = msg.angle_min + msg.angle_increment*i; 
     
-    //Transform to vector, account for position of laser. 
-    Vector2f temp( x, y );
-    temp += kLaserLoc;
-    
-    point_cloud_.push_back( temp );
+    // Rotation
+    Vector2f point( cos(theta)*msg.ranges[i], sin(theta)*msg.ranges[i] ); 
+    // Translation
+    point += kLaserLoc; 
+
+    point_cloud_.push_back( point );
   }
 
   navigation_->ObservePointCloud( point_cloud_, msg.header.stamp.toSec() );
   last_laser_msg_ = msg;
-  
   return;
 }
 
