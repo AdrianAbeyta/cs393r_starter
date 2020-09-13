@@ -93,7 +93,7 @@ class Navigation {
   * @return The collision free distance the vehicle could travel along a path with given curvature
   * @see Mutates None
   **/
-  float FreePathLength( const float& curvature, const float& lookahead_distance ) const;
+  void EvaluatePathOption( PathOption& path_option, const float& lookahead_distance );
 
   /**
   * @note 

@@ -155,12 +155,12 @@ void Navigation::GenerateCurvatureSamples(){
   return;
 }
 
-float Navigation::FreePathLength( const float& curvature, const float& lookahead_distance ) const{
+void Navigation::EvaluatePathOption( PathOption& path_option, const float& lookahead_distance ){
   // For each point in pointcloud
   // Check inner side collision
   // Check frontal collision
   // Check outer side collision
-  Vector2f const pole( 0, 1/curvature ); 
+  Vector2f const pole( 0, 1/path_option.curvature ); 
   std::vector<float> corner_curvatures{ 1/(pole-fr_).norm(),
                                         1/(pole-br_).norm(), 
                                         1/(pole-fl_).norm(), 
@@ -175,7 +175,7 @@ float Navigation::FreePathLength( const float& curvature, const float& lookahead
     float const point_position = atan2( point[1], point[0] ); // Thinking in polar coords!!!
 
     // Only consider points that we can reach on the arc given the lookahead distance
-    if(lookahead_distance*curvature > point_position)
+    if(fabs(lookahead_distance*path_option.curvature) > fabs(point_position))
     {
       if( point_curvature < corner_curvatures[3] &&
           point_curvature > corner_curvatures[2]) 
@@ -197,7 +197,7 @@ float Navigation::FreePathLength( const float& curvature, const float& lookahead
   }
 
   viz_pub_.publish( local_viz_msg_ );
-  return 0.0;
+  return;
 }
 
 void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop ){
@@ -224,8 +224,7 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  float const curvature = 0.5;
-  FreePathLength(curvature, 2);
+  EvaluatePathOption(path_options_[20], 0.5);
   if(!nav_complete_)
   {
     float const predicted_robot_vel = PredictedRobotVelocity();
@@ -233,7 +232,7 @@ void Navigation::Run() {
     float const distance_needed_to_stop = 
       (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
-    TOC(curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
+    TOC(path_options_[20].curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
   }
 
   return;
