@@ -154,8 +154,8 @@ class Navigation {
   float const curvature_limit_ = 1.0;
   // How many samples you want on each side of zero (i.e. min to 0 and then 0 to max)
   int const curvature_sample_count_= 10; // 
-  // Curvature samples
-  std::vector<float> curvature_samples_;
+  // Path options
+  std::vector<PathOption> path_options_;
   // Vehicle dimensions
   float const length_ = 0.75;  // m
   float const wheel_base_ = 0.60;  // m

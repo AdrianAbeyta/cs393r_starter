@@ -146,10 +146,10 @@ double Navigation::PredictedRobotVelocity(){
 }
 
 void Navigation::GenerateCurvatureSamples(){
-  curvature_samples_.resize( 2*curvature_sample_count_ + 1 );
-  for( size_t i=0; i < curvature_samples_.size(); ++i )
+  path_options_.resize( 2*curvature_sample_count_ + 1 );
+  for( size_t i=0; i <  path_options_.size(); ++i )
   {
-    curvature_samples_[i] = -curvature_limit_ + i*(curvature_limit_/curvature_sample_count_);
+    path_options_[i].curvature = -curvature_limit_ + i*(curvature_limit_/curvature_sample_count_);
   }
 
   return;
@@ -160,7 +160,6 @@ float Navigation::FreePathLength( const float& curvature, const float& lookahead
   // Check inner side collision
   // Check frontal collision
   // Check outer side collision
-
   Vector2f const pole( 0, 1/curvature ); 
   std::vector<float> corner_curvatures{ 1/(pole-fr_).norm(),
                                         1/(pole-br_).norm(), 
@@ -173,22 +172,27 @@ float Navigation::FreePathLength( const float& curvature, const float& lookahead
   for(const auto& point: point_cloud_)
   { 
     float const point_curvature = 1/(pole-point).norm();
+    float const point_position = atan2( point[1], point[0] ); // Thinking in polar coords!!!
 
-    if( point_curvature < corner_curvatures[3] &&
-        point_curvature > corner_curvatures[2]) 
+    // Only consider points that we can reach on the arc given the lookahead distance
+    if(lookahead_distance*curvature > point_position)
     {
-      // Inner side collision
-      visualization::DrawCross( point, 0.02, 16711680, local_viz_msg_ );
-     }else if( point_curvature < corner_curvatures[2] &&
-             point_curvature > corner_curvatures[1] ) 
-    {
-      // Frontal collisions
-      visualization::DrawPoint( point, 255, local_viz_msg_ );
-    }else if( point_curvature < corner_curvatures[1] &&
-             point_curvature > corner_curvatures[0] ) 
-    {
-      // Outer side collision
-      visualization::DrawCross( point, 0.02, 16711935, local_viz_msg_ );
+      if( point_curvature < corner_curvatures[3] &&
+          point_curvature > corner_curvatures[2]) 
+      {
+        // Inner side collision
+        visualization::DrawCross( point, 0.02, 16711680, local_viz_msg_ );
+      }else if( point_curvature < corner_curvatures[2] &&
+                point_curvature > corner_curvatures[1] ) 
+      {
+        // Frontal collision
+        visualization::DrawPoint( point, 255, local_viz_msg_ );
+      }else if( point_curvature < corner_curvatures[1] &&
+                point_curvature > corner_curvatures[0] ) 
+      {
+        // Outer side collision
+        visualization::DrawCross( point, 0.02, 16711935, local_viz_msg_ );
+      }
     }
   }
 
@@ -220,7 +224,7 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  float const curvature = 0.01;
+  float const curvature = 0.5;
   FreePathLength(curvature, 2);
   if(!nav_complete_)
   {
