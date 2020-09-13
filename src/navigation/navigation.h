@@ -157,11 +157,17 @@ class Navigation {
   // Curvature samples
   std::vector<float> curvature_samples_;
   // Vehicle dimensions
-  float const length_ = 0.5;  // m
-  float const wheel_base_ = 0.4;  // m
-  float const width_ = 0.25;  // m
-  float const track_ = 0.20;  // m
+  float const length_ = 0.75;  // m
+  float const wheel_base_ = 0.60;  // m
+  float const width_ = 0.45;  // m
+  float const track_ = 0.35;  // m
   float const margin_ = 0.1; // m
+  // Vehicle coordinates in base_link frame
+  Eigen::Vector2f fr_; // front right
+  Eigen::Vector2f br_;  // back right
+  Eigen::Vector2f fl_; // front left 
+  Eigen::Vector2f bl_; // back left
+
   // carrot
   float const carrot_ = 3.0; //m
   
