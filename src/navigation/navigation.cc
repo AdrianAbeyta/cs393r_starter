@@ -108,13 +108,15 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
   return;
 }
 
-void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud_,double time ) {
+void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double time ) {
   visualization::ClearVisualizationMsg( local_viz_msg_ );
   for ( const auto& point: point_cloud_ )
   {
     visualization::DrawPoint( point, 252, local_viz_msg_ );
   }
 
+  point_cloud_ = point_cloud; 
+  
   viz_pub_.publish( local_viz_msg_ );
   
   return;
@@ -128,6 +130,7 @@ double Navigation::PredictedRobotVelocity(){
   command_history_.remove_if( commandIsOld );
 
   float predicted_velocity = robot_vel_[0];
+  // Integrate acceleration to get the velocity we can expect after the actuation lag
   for( const auto& command: command_history_)
   {
     predicted_velocity += command.acceleration * time_step_;
@@ -146,8 +149,12 @@ void Navigation::GenerateCurvatureSamples(){
   return;
 }
 
+float Navigation::FreePathLength( const float& curvature, const float& lookahead_distance ) const{
+  return 0.0;
+}
+
 void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop ){
-  AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Default "Cruise" means acceleration = 0.0
+  AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Defaults to "Cruise"- means acceleration = 0.0
 
   if( distance_to_local_goal > distance_needed_to_stop &&
       robot_velocity < max_velocity_ )
