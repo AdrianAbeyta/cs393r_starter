@@ -70,7 +70,7 @@ class Navigation {
   // Used to set the next target pose.
   void SetNavGoal(const Eigen::Vector2f& loc, float angle);
 
-  ////HELMS DEEP ADDITIONS////
+  ////HELMS DEEP ADDITIONS//// //TODO make additional functions private
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   // Predict the velocity the car will have after the lagged commands are executed
@@ -83,6 +83,17 @@ class Navigation {
   * @see Mutates curvature_samples_
   **/
   void GenerateCurvatureSamples();
+  // Generate curvature samples
+  /**
+  * @note If there is no collision on the path the lookahead distance will equal the calculated float FreePathLength();
+  *
+  * @brief Calculates how far down an arc the car can travel
+  * @param curvature The curvature of the path being considered
+  * @param lookahead_distance How far along the arc to consider collision risk
+  * @return The collision free distance the vehicle could travel along a path with given curvature
+  * @see Mutates None
+  **/
+  float FreePathLength( const float& curvature, const float& lookahead_distance ) const;
 
   /**
   * @note 
@@ -145,11 +156,16 @@ class Navigation {
   int const curvature_sample_count_= 10; // 
   // Curvature samples
   std::vector<float> curvature_samples_;
-
+  // Vehicle dimensions
+  float const length_ = 0.5;  // m
+  float const wheel_base_ = 0.4;  // m
+  float const width_ = 0.25;  // m
+  float const track_ = 0.20;  // m
   // carrot
   float const carrot_ = 3.0; //m
   
-
+  // Point cloud
+  std::vector<Eigen::Vector2f> point_cloud_;
 
   // Run function call rate
   float const time_step_ = 1.0/20; // s
