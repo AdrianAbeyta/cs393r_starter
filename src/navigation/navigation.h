@@ -161,6 +161,7 @@ class Navigation {
   float const wheel_base_ = 0.4;  // m
   float const width_ = 0.25;  // m
   float const track_ = 0.20;  // m
+  float const margin_ = 0.1; // m
   // carrot
   float const carrot_ = 3.0; //m
   
