@@ -85,13 +85,12 @@ class Navigation {
   void GenerateCurvatureSamples();
   // Generate curvature samples
   /**
-  * @note If there is no collision on the path the lookahead distance will equal the calculated float FreePathLength();
+  * @note If there is no collision on the path the lookahead distance will equal the free path length
   *
-  * @brief Calculates how far down an arc the car can travel
-  * @param curvature The curvature of the path being considered
-  * @param lookahead_distance How far along the arc to consider collision risk
-  * @return The collision free distance the vehicle could travel along a path with given curvature
-  * @see Mutates None
+  * @brief Calculates the path option point cloud based collision parameters
+  * @param path_option_ The path option considered, each one has a unique sampled curvature
+  * @param lookahead_distance How far along the arc specified by the curvature to consider collision risk
+  * @see Mutates path_options_
   **/
   void EvaluatePathOption( PathOption& path_option, const float& lookahead_distance );
 
