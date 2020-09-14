@@ -177,60 +177,61 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
   
   //TODO use enum to pick positive of negative 
   Vector2f const pole( 0, 1/path_option.curvature ); 
-  std::vector<float> corner_curvatures{ 1/(fr_ - pole).norm(),
-                                        1/(br_ - pole).norm(), 
-                                        1/(fl_ - pole).norm(), 
-                                        1/(bl_ - pole).norm() };
+  std::vector<float> corner_curvatures{ 1/(pole - fr_).norm(),
+                                        1/(pole - br_).norm(), 
+                                        1/(pole - fl_).norm(), 
+                                        1/(pole - bl_).norm() };
   // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
   sort(corner_curvatures.begin(), corner_curvatures.end());
 
+  visualization::ClearVisualizationMsg( local_viz_msg_ );
   switch(select) {
     case Curvature::negative:
+    {
+      const float phi = fabs(lookahead_distance * path_option.curvature);
       for(const auto& point: point_cloud_)
       {
-        
+        //float const point_curvature = 1/(pole - point).norm();
+        Vector2f pole_local_point = pole-point;
+        const float theta = atan2(pole_local_point[1], pole_local_point[0]) + M_PI/2 + phi;
+        if(theta> 0 &&
+           theta<phi)
+        {
+          visualization::DrawPoint( point, 16711935, local_viz_msg_ );
+        }
+        //Collision collision_type = CollisionType(point_curvature, corner_curvatures);      
       }
+    }
       break; 
     case Curvature::zero:
-      for(const auto& point: point_cloud_)
-      { 
-
-      }
+      // for(const auto& point: point_cloud_)
+      // { 
+        
+      // }
       break; 
     case Curvature::positive:
+    {
+      const float phi = lookahead_distance * path_option.curvature;
       for(const auto& point: point_cloud_)
       { 
+        //  float const point_curvature = 1/(pole - point).norm();
 
+        // Collision collision_type = CollisionType(point_curvature, corner_curvatures);
+
+        Vector2f pole_local_point = pole-point;
+        const float theta = atan2(pole_local_point[1], pole_local_point[0]) - M_PI/2;
+        if(theta> 0 &&
+           theta<phi)
+        {
+          visualization::DrawPoint( point, 16711935, local_viz_msg_ );
+        }
       }
+    }
       break; 
-  }
-
-  visualization::ClearVisualizationMsg( local_viz_msg_ );
-  float polar_offset = path_option.curvature>0 ? -M_PI/2 : M_PI/2;
-
-  for(const auto& point: point_cloud_)
-  { 
-    Vector2f pole_local_point = pole-point;
-    float const point_curvature = 1/(pole_local_point).norm();
-
-    if( point_curvature < corner_curvatures[3] &&
-        point_curvature > corner_curvatures[2]) 
-    {
-      visualization::DrawPoint( point, 16711680, local_viz_msg_ );
-    }else if( point_curvature < corner_curvatures[2] &&
-              point_curvature > corner_curvatures[1] ) 
-    {
-      visualization::DrawPoint( point, 255, local_viz_msg_ );
-    }else if( point_curvature < corner_curvatures[1] &&
-              point_curvature > corner_curvatures[0] ) 
-    {
-        visualization::DrawPoint( point, 16711935, local_viz_msg_ );
-    } 
   }
 
   visualization::DrawLine(pole, Vector2f(0,0),255, local_viz_msg_ );
-  visualization::DrawLine(pole, pole-Vector2f( cos(lookahead_distance*path_option.curvature+polar_offset)/path_option.curvature, sin(lookahead_distance*path_option.curvature+polar_offset)/path_option.curvature), 255, local_viz_msg_ );
-
+  
   viz_pub_.publish( local_viz_msg_ );
   return;
 }
@@ -260,7 +261,7 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 
 void Navigation::Run() {
   int path_option_id = 5;
-  EvaluatePathOption(path_options_[path_option_id], 1.0);
+  EvaluatePathOption(path_options_[path_option_id], 2.0);
   if(!nav_complete_)
   {
     float const predicted_robot_vel = PredictedRobotVelocity();
@@ -276,7 +277,7 @@ void Navigation::Run() {
 
 // Create Helper functions here
 // Milestone 1 will fill out part of this class.
-Collision CollisionType(float curvature, const std::vector<float>& corner_limits ){
+Collision CollisionType(const float& curvature, const std::vector<float>& corner_limits ){
   if( curvature < corner_limits[3] &&
       curvature > corner_limits[2]) 
     {
@@ -290,9 +291,21 @@ Collision CollisionType(float curvature, const std::vector<float>& corner_limits
     {
         return Collision::outer;
     } 
+
     return Collision::none;
 }
 // Milestone 3 will complete the rest of navigation.
 
 
 }  // namespace navigation
+
+
+
+// if(collision_type == Collision::inner)
+//         {
+//           visualization::DrawPoint( point, 16711680, local_viz_msg_ );
+//         } else if(collision_type == Collision::front){
+//           visualization::DrawPoint( point, 255, local_viz_msg_ );
+//         }else if(collision_type == Collision::outer){
+//           visualization::DrawPoint( point, 16711935, local_viz_msg_ );
+//         }
