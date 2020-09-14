@@ -161,46 +161,41 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
     // Check inner side collision
     // Check frontal collision
     // Check outer side collision
+  
+  //TODO use enum to pick positive of negative 
   Vector2f const pole( 0, 1/path_option.curvature ); 
-  std::vector<float> corner_curvatures{ 1/(pole-fr_).norm(),
-                                        1/(pole-br_).norm(), 
-                                        1/(pole-fl_).norm(), 
-                                        1/(pole-bl_).norm() };
+  std::vector<float> corner_curvatures{ 1/(fr_ - pole).norm(),
+                                        1/(br_ - pole).norm(), 
+                                        1/(fl_ - pole).norm(), 
+                                        1/(bl_ - pole).norm() };
   // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
   sort(corner_curvatures.begin(), corner_curvatures.end());
 
   visualization::ClearVisualizationMsg( local_viz_msg_ );
+  float polar_offset = path_option.curvature>0 ? -M_PI/2 : M_PI/2;
+
   for(const auto& point: point_cloud_)
   { 
     Vector2f pole_local_point = pole-point;
     float const point_curvature = 1/(pole_local_point).norm();
 
-    float point_position; // Thinking in polar coords!!!
-    if (path_option.curvature > 0)
+    if( point_curvature < corner_curvatures[3] &&
+        point_curvature > corner_curvatures[2]) 
     {
-      point_position = fabs(atan2( pole_local_point[1], pole_local_point[0] )-M_PI/2); 
-    } else {
-       point_position = fabs(atan2( pole_local_point[1], pole_local_point[0] )+M_PI/2);
-    }
-
-    // Only consider points that we can reach on the arc given the lookahead distance
-    if( point_position < fabs(lookahead_distance*path_option.curvature) )
+      visualization::DrawPoint( point, 16711680, local_viz_msg_ );
+    }else if( point_curvature < corner_curvatures[2] &&
+              point_curvature > corner_curvatures[1] ) 
     {
-      if( point_curvature < corner_curvatures[3] &&
-          point_curvature > corner_curvatures[2]) 
-      {
-        visualization::DrawCross( point, 0.02, 16711680, local_viz_msg_ );
-      }else if( point_curvature < corner_curvatures[2] &&
-                point_curvature > corner_curvatures[1] ) 
-      {
-        visualization::DrawPoint( point, 255, local_viz_msg_ );
-      }else if( point_curvature < corner_curvatures[1] &&
-                point_curvature > corner_curvatures[0] ) 
-      {
-        visualization::DrawCross( point, 0.02, 16711935, local_viz_msg_ );
-      }
-    }
+      visualization::DrawPoint( point, 255, local_viz_msg_ );
+    }else if( point_curvature < corner_curvatures[1] &&
+              point_curvature > corner_curvatures[0] ) 
+    {
+        visualization::DrawPoint( point, 16711935, local_viz_msg_ );
+    } 
   }
+
+  visualization::DrawLine(pole, Vector2f(0,0),255, local_viz_msg_ );
+  visualization::DrawLine(pole, pole-Vector2f( cos(lookahead_distance*path_option.curvature+polar_offset)/path_option.curvature, sin(lookahead_distance*path_option.curvature+polar_offset)/path_option.curvature), 255, local_viz_msg_ );
 
   viz_pub_.publish( local_viz_msg_ );
   return;
@@ -230,8 +225,8 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  int path_option_id = 15;
-  EvaluatePathOption(path_options_[path_option_id], 2.0);
+  int path_option_id = 5;
+  EvaluatePathOption(path_options_[path_option_id], 1.0);
   if(!nav_complete_)
   {
     float const predicted_robot_vel = PredictedRobotVelocity();
