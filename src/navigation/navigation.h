@@ -41,11 +41,27 @@ struct PathOption {
   Eigen::Vector2f closest_point;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
 struct AccelerationCommand {
   float acceleration;
   ros::Time stamp;
 };
 
+enum class Curvature { negative, 
+                       zero, 
+                       positive };
+
+enum class Collision { inner, 
+                       front, 
+                       outer,
+                       none };
+
+
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
 class Navigation {
  public:
 
@@ -181,9 +197,15 @@ class Navigation {
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   
- 
-  
 };
+
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+Collision CollisionType(float curvature, const std::vector<float>& corner_limits );
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
 
 }  // namespace navigation
 
