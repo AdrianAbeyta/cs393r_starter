@@ -202,7 +202,7 @@ class Navigation {
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
-Collision CollisionType(float curvature, const std::vector<float>& corner_limits );
+Collision CollisionType(const float& curvature, const std::vector<float>& corner_limits );
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
