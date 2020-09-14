@@ -161,6 +161,19 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
     // Check inner side collision
     // Check frontal collision
     // Check outer side collision
+  Curvature select;
+  if(path_option.curvature < 0){
+    select = Curvature::negative;
+  }else if (path_option.curvature > 0){
+    select = Curvature::positive;
+  }else{
+    select = Curvature::zero;
+  }
+
+  
+    
+  
+   
   
   //TODO use enum to pick positive of negative 
   Vector2f const pole( 0, 1/path_option.curvature ); 
@@ -170,6 +183,27 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
                                         1/(bl_ - pole).norm() };
   // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
   sort(corner_curvatures.begin(), corner_curvatures.end());
+
+  switch(select) {
+    case Curvature::negative:
+      for(const auto& point: point_cloud_)
+      {
+        
+      }
+      break; 
+    case Curvature::zero:
+      for(const auto& point: point_cloud_)
+      { 
+
+      }
+      break; 
+    case Curvature::positive:
+      for(const auto& point: point_cloud_)
+      { 
+
+      }
+      break; 
+  }
 
   visualization::ClearVisualizationMsg( local_viz_msg_ );
   float polar_offset = path_option.curvature>0 ? -M_PI/2 : M_PI/2;
@@ -242,6 +276,23 @@ void Navigation::Run() {
 
 // Create Helper functions here
 // Milestone 1 will fill out part of this class.
+Collision CollisionType(float curvature, const std::vector<float>& corner_limits ){
+  if( curvature < corner_limits[3] &&
+      curvature > corner_limits[2]) 
+    {
+      return Collision::inner;
+    }else if( curvature < corner_limits[2] &&
+              curvature > corner_limits[1] ) 
+    {
+      return Collision::front;
+    }else if( curvature < corner_limits[1] &&
+              curvature > corner_limits[0] ) 
+    {
+        return Collision::outer;
+    } 
+    return Collision::none;
+}
 // Milestone 3 will complete the rest of navigation.
+
 
 }  // namespace navigation
