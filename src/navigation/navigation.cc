@@ -156,20 +156,6 @@ void Navigation::GenerateCurvatureSamples(){
 }
 
 void Navigation::EvaluatePathOption( PathOption& path_option, const float& lookahead_distance ){
-  // For each point in pointcloud
-  // Check if its less than the lookahead distance away and if it is:
-    // Check inner side collision
-    // Check frontal collision
-    // Check outer side collision
-  Curvature select;
-  if(path_option.curvature < 0){
-    select = Curvature::negative;
-  }else if (path_option.curvature > 0){
-    select = Curvature::positive;
-  }else{
-    select = Curvature::zero;
-  }
-
   Vector2f const pole( 0, 1/path_option.curvature ); 
   std::vector<float> corner_curvatures{ 1/(pole - fr_).norm(),
                                         1/(pole - br_).norm(), 
@@ -178,43 +164,8 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
   // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
   sort(corner_curvatures.begin(), corner_curvatures.end());
 
-  
-  const float phi = fabs(lookahead_distance * path_option.curvature); //only has meaning for the non-zero options
-
-  path_option.clearance = 10;
-  path_option.free_path_length = lookahead_distance;
-  
-
   visualization::ClearVisualizationMsg( local_viz_msg_ );
 
-  switch(select) {
-    case Curvature::negative:
-    {
-      for(const auto& point: point_cloud_)
-      {
-        Collision collision_type = CollisionType( phi, point, pole, corner_curvatures, M_PI/2+phi );   
-        DrawCollision( point, collision_type, local_viz_msg_);
-      }     
-    }
-      break; 
-    case Curvature::zero:
-    {
-      // for(const auto& point: point_cloud_)
-      // { 
-        
-      // }
-    }
-      break; 
-    case Curvature::positive:
-    {
-      for(const auto& point: point_cloud_)
-      { 
-        Collision collision_type = CollisionType( phi, point, pole, corner_curvatures, -M_PI/2 );  
-        DrawCollision( point, collision_type, local_viz_msg_);
-      }
-    }
-      break; 
-  }
 
 
   visualization::DrawLine(pole, Vector2f(0,0),255, local_viz_msg_ );
