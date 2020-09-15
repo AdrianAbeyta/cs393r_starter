@@ -180,8 +180,10 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
 
   
   const float phi = fabs(lookahead_distance * path_option.curvature); //only has meaning for the non-zero options
+
+  path_option.clearance = 10;
   path_option.free_path_length = lookahead_distance;
-  path_option.clearance = 1/corner_curvatures[3];
+  
 
   visualization::ClearVisualizationMsg( local_viz_msg_ );
 
@@ -214,8 +216,8 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
       break; 
   }
 
+
   visualization::DrawLine(pole, Vector2f(0,0),255, local_viz_msg_ );
-  
   viz_pub_.publish( local_viz_msg_ );
 
   return;
