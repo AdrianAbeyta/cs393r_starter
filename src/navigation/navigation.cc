@@ -149,14 +149,14 @@ void Navigation::GenerateCurvatureSamples(){
   path_options_.resize( 2*curvature_sample_count_ + 1 );
   for( size_t i=0; i <  path_options_.size(); ++i )
   {
-    path_options_[i].curvature = -curvature_limit_ + i*(curvature_limit_/curvature_sample_count_);
+    path_options_[i].first.curvature = -curvature_limit_ + i*(curvature_limit_/curvature_sample_count_);
   }
 
   return;
 }
 
-void Navigation::EvaluatePathOption( PathOption& path_option, const float& lookahead_distance ){
-  Vector2f const pole( 0, 1/path_option.curvature ); 
+void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleCorners> >& path_option, const float& lookahead_distance ){
+  Vector2f const pole( 0, 1/path_option.first.curvature ); 
   float corner_curvatures[4] = { 1/(pole - fr_).norm(),
                                  1/(pole - br_).norm(), 
                                  1/(pole - fl_).norm(), 
@@ -178,7 +178,7 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
     } 
   }
 
-  float const lookahead_theta = path_option.curvature*lookahead_distance;
+  float const lookahead_theta = path_option.first.curvature*lookahead_distance;
   for(int i=0; i<arc_samples_; ++i)
   {
     const float theta = i*lookahead_theta/arc_samples_;
@@ -239,7 +239,7 @@ void Navigation::Run() {
     float const distance_needed_to_stop = 
       (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
-    TOC(path_options_[path_option_id].curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
+    TOC(path_options_[path_option_id].first.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
   }
 
   return;

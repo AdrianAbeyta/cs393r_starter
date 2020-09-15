@@ -125,7 +125,7 @@ class Navigation {
   * @param lookahead_distance How far along the arc specified by the curvature to consider collision risk
   * @see Mutates path_options_
   **/
-  void EvaluatePathOption( PathOption& path_option, const float& lookahead_distance );
+  void EvaluatePathOption( std::pair< PathOption, std::vector<VehicleCorners> >& path_option, const float& lookahead_distance );
 
   /**
   * @note 
@@ -187,7 +187,7 @@ class Navigation {
   // How many samples you want on each side of zero (i.e. min to 0 and then 0 to max)
   int const curvature_sample_count_= 10; // 
   // Path options
-  std::vector<PathOption> path_options_;
+  std::vector< std::pair< PathOption, std::vector<VehicleCorners> > > path_options_;
   // Vehicle dimensions
   float const length_ = 0.75;  // m
   float const wheel_base_ = 0.60;  // m
