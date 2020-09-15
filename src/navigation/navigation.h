@@ -212,6 +212,7 @@ class Navigation {
   
 };
 
+bool Collision(const std::vector<Eigen::Vector2f>& obstacle_set, const VehicleCorners& rectangle);
 
 }  // namespace navigation
 
