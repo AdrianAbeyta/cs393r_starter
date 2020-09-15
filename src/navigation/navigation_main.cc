@@ -63,6 +63,7 @@ using std::string;
 using std::vector;
 using Eigen::Vector2f;
 using amrl_msgs::VisualizationMsg;
+using amrl_msgs::Localization2DMsg;
 
 // Create command line arguments
 DEFINE_string(laser_topic, "scan", "Name of ROS topic for LIDAR data");
