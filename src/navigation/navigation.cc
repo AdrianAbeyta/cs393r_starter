@@ -243,7 +243,25 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
       visualization::DrawPoint( point, 255, local_viz_msg_ );
     } 
   }
+
+  visualization::ClearVisualizationMsg( local_viz_msg_ );
+
+  for(const VehicleCorners& corners: path_option.second)
+  {
+    if( Collision(collision_set, corners ) )
+    {
+      visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
+      visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
+      visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
+    }else{
+      visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
+      visualization::DrawLine(corners.fr, corners.br, 0, local_viz_msg_ );
+      visualization::DrawLine(corners.fl, corners.bl, 0, local_viz_msg_ );
+    }
+  }
   
+  viz_pub_.publish( local_viz_msg_ );
+
   return;
 }
 
@@ -271,20 +289,8 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  visualization::ClearVisualizationMsg( local_viz_msg_ );
-  for(const auto& path_option: path_options_)
-  {
-    for(const VehicleCorners& corners: path_option.second)
-    {
-      visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
-      visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
-      visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
-    }
-  }
-  viz_pub_.publish( local_viz_msg_ );
-
-  int path_option_id = 15;
-  //EvaluatePathOption(path_options_[path_option_id], 2.0);
+  int path_option_id = 5;
+  EvaluatePathOption(path_options_[path_option_id], 2.0);
   if(!nav_complete_)
   {
     float const predicted_robot_vel = PredictedRobotVelocity();
@@ -300,6 +306,22 @@ void Navigation::Run() {
 
 // Create Helper functions here
 // Milestone 1 will fill out part of this class.
+bool Collision(const vector<Vector2f>& obstacle_set, const VehicleCorners& rectangle)
+{
+  for(const auto& obstacle: obstacle_set)
+  {
+    //https://stackoverflow.com/questions/2752725/finding-whether-a-point-lies-inside-a-rectangle-or-not
+    float const ABAM = (rectangle.br-rectangle.fr).dot(obstacle-rectangle.fr);
+    float const ABAB = (rectangle.br-rectangle.fr).dot(rectangle.br-rectangle.fr);
+    float const BCBM = (rectangle.bl-rectangle.br).dot(obstacle-rectangle.br);
+    float const BCBC = (rectangle.bl-rectangle.br).dot(rectangle.bl-rectangle.br);
+    if (0 <= ABAM && ABAM <= ABAB && 0 <= BCBM && BCBM <= BCBC)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
 // Milestone 3 will complete the rest of navigation.
 
 
