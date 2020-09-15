@@ -193,6 +193,9 @@ class Navigation {
   Eigen::Vector2f fl_; // front left 
   Eigen::Vector2f bl_; // back left
 
+  // Collision checking arc samples
+  int const arc_samples_ = 10;
+
   // carrot
   float const carrot_ = 3.0; //m
   
