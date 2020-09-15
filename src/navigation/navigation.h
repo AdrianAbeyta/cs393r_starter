@@ -59,15 +59,6 @@ struct AccelerationCommand {
   ros::Time stamp;
 };
 
-enum class Curvature { negative, 
-                       zero, 
-                       positive };
-
-enum class Collision { inner, 
-                       front, 
-                       outer,
-                       none };
-
 struct VehicleCorners{
   //Locations relative to the origin base_link frame
   Eigen::Vector2f fr;
@@ -221,15 +212,6 @@ class Navigation {
   
 };
 
-////HELMS DEEP ADDITIONS////
-////HELMS DEEP ADDITIONS////
-////HELMS DEEP ADDITIONS////
-Collision CollisionType( const float& lookahead_theta, const Eigen::Vector2f& point, const  Eigen::Vector2f& pole, const std::vector<float>& corner_limits, const float& offset ); 
-
-void DrawCollision(const Eigen::Vector2f& point, const Collision& type, amrl_msgs::VisualizationMsg& viz_msg);
-////HELMS DEEP ADDITIONS////
-////HELMS DEEP ADDITIONS////
-////HELMS DEEP ADDITIONS////
 
 }  // namespace navigation
 

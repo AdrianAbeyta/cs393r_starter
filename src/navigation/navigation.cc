@@ -300,43 +300,6 @@ void Navigation::Run() {
 
 // Create Helper functions here
 // Milestone 1 will fill out part of this class.
-Collision CollisionType( const float& lookahead_theta, const Vector2f& point, const Vector2f& pole, const std::vector<float>& corner_limits, const float& offset ){
-  const float theta = atan2(pole[1]-point[1], pole[0]-point[0]) + offset; //position of point in polar coords
-  if( theta > 0 &&
-      theta < lookahead_theta )
-  {
-    float const curvature = 1/(pole - point).norm();
-    if( curvature < corner_limits[3] &&
-        curvature > corner_limits[2]) 
-    {
-      return Collision::inner;
-    }else if( curvature < corner_limits[2] &&
-              curvature > corner_limits[1] ) 
-    {
-      return Collision::front;
-    }else if( curvature < corner_limits[1] &&
-              curvature > corner_limits[0] ) 
-    {
-        return Collision::outer;
-    } 
-  }
-  return Collision::none;
-}
-
-void DrawCollision(const Vector2f& point, const Collision& type, VisualizationMsg& viz_msg)
-{
-  if(type != Collision::none)
-  {
-    if(type == Collision::inner)
-    {
-      visualization::DrawPoint( point, 16711680, local_viz_msg_ );
-    } else if(type == Collision::front){
-      visualization::DrawPoint( point, 255, local_viz_msg_ );
-    }else if(type == Collision::outer){
-      visualization::DrawPoint( point, 16711935, local_viz_msg_ );
-    }
-  }
-}
 // Milestone 3 will complete the rest of navigation.
 
 
@@ -344,11 +307,4 @@ void DrawCollision(const Vector2f& point, const Collision& type, VisualizationMs
 
 
 
-// if(collision_type == Collision::inner)
-//         {
-//           visualization::DrawPoint( point, 16711680, local_viz_msg_ );
-//         } else if(collision_type == Collision::front){
-//           visualization::DrawPoint( point, 255, local_viz_msg_ );
-//         }else if(collision_type == Collision::outer){
-//           visualization::DrawPoint( point, 16711935, local_viz_msg_ );
-//         }
+
