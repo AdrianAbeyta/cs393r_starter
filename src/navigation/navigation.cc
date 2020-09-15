@@ -190,25 +190,9 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
     {
       for(const auto& point: point_cloud_)
       {
-        const float theta = atan2(pole[1]-point[1], pole[0]-point[0]) + M_PI/2 + phi; //position of point in polar coords
-        if( theta > 0 &&
-            theta < phi )
-        {
-          float const point_curvature = 1/(pole - point).norm();
-          Collision collision_type = CollisionType(point_curvature, corner_curvatures);   
-          if(collision_type != Collision::none)
-          {
-            if(collision_type == Collision::inner)
-            {
-              visualization::DrawPoint( point, 16711680, local_viz_msg_ );
-            } else if(collision_type == Collision::front){
-              visualization::DrawPoint( point, 255, local_viz_msg_ );
-            }else if(collision_type == Collision::outer){
-              visualization::DrawPoint( point, 16711935, local_viz_msg_ );
-            }
-          }
-        }     
-      }
+        Collision collision_type = CollisionType( phi, point, pole, corner_curvatures, M_PI/2+phi );   
+        DrawCollision( point, collision_type, local_viz_msg_);
+      }     
     }
       break; 
     case Curvature::zero:
@@ -223,24 +207,8 @@ void Navigation::EvaluatePathOption( PathOption& path_option, const float& looka
     {
       for(const auto& point: point_cloud_)
       { 
-        const float theta = atan2( pole[1]-point[1], pole[0]-point[0] ) - M_PI/2;   //position of point in polar coords
-        if( theta > 0 &&
-            theta < phi )
-        {
-          float const point_curvature = 1/(pole - point).norm();
-          Collision collision_type = CollisionType(point_curvature, corner_curvatures);
-          if(collision_type != Collision::none)
-          {
-            if(collision_type == Collision::inner)
-            {
-              visualization::DrawPoint( point, 16711680, local_viz_msg_ );
-            } else if(collision_type == Collision::front){
-              visualization::DrawPoint( point, 255, local_viz_msg_ );
-            }else if(collision_type == Collision::outer){
-              visualization::DrawPoint( point, 16711935, local_viz_msg_ );
-            }
-          }
-        }
+        Collision collision_type = CollisionType( phi, point, pole, corner_curvatures, -M_PI/2 );  
+        DrawCollision( point, collision_type, local_viz_msg_);
       }
     }
       break; 
@@ -277,7 +245,7 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  int path_option_id = 15;
+  int path_option_id = 5;
   EvaluatePathOption(path_options_[path_option_id], 2.0);
   if(!nav_complete_)
   {
@@ -294,9 +262,14 @@ void Navigation::Run() {
 
 // Create Helper functions here
 // Milestone 1 will fill out part of this class.
-Collision CollisionType(const float& curvature, const std::vector<float>& corner_limits ){
-  if( curvature < corner_limits[3] &&
-      curvature > corner_limits[2]) 
+Collision CollisionType( const float& lookahead_theta, const Vector2f& point, const Vector2f& pole, const std::vector<float>& corner_limits, const float& offset ){
+  const float theta = atan2(pole[1]-point[1], pole[0]-point[0]) + offset; //position of point in polar coords
+  if( theta > 0 &&
+      theta < lookahead_theta )
+  {
+    float const curvature = 1/(pole - point).norm();
+    if( curvature < corner_limits[3] &&
+        curvature > corner_limits[2]) 
     {
       return Collision::inner;
     }else if( curvature < corner_limits[2] &&
@@ -308,8 +281,23 @@ Collision CollisionType(const float& curvature, const std::vector<float>& corner
     {
         return Collision::outer;
     } 
+  }
+  return Collision::none;
+}
 
-    return Collision::none;
+void DrawCollision(const Vector2f& point, const Collision& type, VisualizationMsg& viz_msg)
+{
+  if(type != Collision::none)
+  {
+    if(type == Collision::inner)
+    {
+      visualization::DrawPoint( point, 16711680, local_viz_msg_ );
+    } else if(type == Collision::front){
+      visualization::DrawPoint( point, 255, local_viz_msg_ );
+    }else if(type == Collision::outer){
+      visualization::DrawPoint( point, 16711935, local_viz_msg_ );
+    }
+  }
 }
 // Milestone 3 will complete the rest of navigation.
 

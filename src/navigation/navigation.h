@@ -24,6 +24,16 @@
   
 #include "eigen3/Eigen/Dense"
 
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+
+#include "amrl_msgs/VisualizationMsg.h"
+
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+////HELMS DEEP ADDITIONS////
+
 #ifndef NAVIGATION_H
 #define NAVIGATION_H
 
@@ -202,7 +212,9 @@ class Navigation {
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
-Collision CollisionType(const float& curvature, const std::vector<float>& corner_limits );
+Collision CollisionType( const float& lookahead_theta, const Eigen::Vector2f& point, const  Eigen::Vector2f& pole, const std::vector<float>& corner_limits, const float& offset ); 
+
+void DrawCollision(const Eigen::Vector2f& point, const Collision& type, amrl_msgs::VisualizationMsg& viz_msg);
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
