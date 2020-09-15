@@ -68,6 +68,13 @@ enum class Collision { inner,
                        outer,
                        none };
 
+struct VehicleCorners{
+  //Locations relative to the origin base_link frame
+  Eigen::Vector2f fr;
+  Eigen::Vector2f fl;
+  Eigen::Vector2f bl;
+  Eigen::Vector2f br;  
+};
 
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
@@ -195,6 +202,8 @@ class Navigation {
 
   // Collision checking arc samples
   int const arc_samples_ = 10;
+  //
+  float const lookahead_distance_ = 2.0;
 
   // carrot
   float const carrot_ = 3.0; //m

@@ -157,16 +157,48 @@ void Navigation::GenerateCurvatureSamples(){
 
 void Navigation::EvaluatePathOption( PathOption& path_option, const float& lookahead_distance ){
   Vector2f const pole( 0, 1/path_option.curvature ); 
-  std::vector<float> corner_curvatures{ 1/(pole - fr_).norm(),
-                                        1/(pole - br_).norm(), 
-                                        1/(pole - fl_).norm(), 
-                                        1/(pole - bl_).norm() };
+  float corner_curvatures[4] = { 1/(pole - fr_).norm(),
+                                 1/(pole - br_).norm(), 
+                                 1/(pole - fl_).norm(), 
+                                 1/(pole - bl_).norm() };
   // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
-  sort(corner_curvatures.begin(), corner_curvatures.end());
+  std::sort(corner_curvatures, corner_curvatures+4);
 
   visualization::ClearVisualizationMsg( local_viz_msg_ );
 
+  vector<Vector2f> collision_set;
+  for(const auto& point: point_cloud_)
+  {
+    float const curvature = 1/(pole - point).norm();
+    if( curvature < corner_curvatures[3] &&
+        curvature > corner_curvatures[0] ) 
+    {
+      collision_set.push_back(point);
+      visualization::DrawPoint( point, 255, local_viz_msg_ );
+    } 
+  }
 
+  float const lookahead_theta = path_option.curvature*lookahead_distance;
+  for(int i=0; i<arc_samples_; ++i)
+  {
+    const float theta = i*lookahead_theta/arc_samples_;
+
+    	
+    Eigen::Rotation2D<float> rot2(theta);
+
+    Vector2f base_link;
+    base_link[0]=pole[0]+sin(theta)*pole.norm();
+    base_link[1]=pole[1]-cos(theta)*pole.norm();
+
+    visualization::DrawPoint(base_link, 255, local_viz_msg_); 
+
+    visualization::DrawLine(rot2*fr_+(base_link), rot2*fl_+(base_link), 255, local_viz_msg_); 
+    visualization::DrawLine(rot2*fl_+(base_link), rot2*bl_+(base_link), 255, local_viz_msg_);   
+    visualization::DrawLine(rot2*fr_+(base_link), rot2*br_+(base_link), 255, local_viz_msg_);      
+
+    visualization::DrawPoint(base_link, 255, local_viz_msg_);
+    
+  }
 
   visualization::DrawLine(pole, Vector2f(0,0),255, local_viz_msg_ );
   viz_pub_.publish( local_viz_msg_ );
@@ -198,7 +230,7 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  int path_option_id = 5;
+  int path_option_id = 15;
   EvaluatePathOption(path_options_[path_option_id], 2.0);
   if(!nav_complete_)
   {
