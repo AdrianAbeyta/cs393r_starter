@@ -231,7 +231,7 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
   // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
   std::sort(corner_curvatures, corner_curvatures+4);
 
-
+  visualization::ClearVisualizationMsg( local_viz_msg_ );
   vector<Vector2f> collision_set;
   for(const auto& point: point_cloud_)
   {
@@ -244,22 +244,25 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
     } 
   }
 
-  visualization::ClearVisualizationMsg( local_viz_msg_ );
-
+  path_option.first.free_path_length = lookahead_distance_;
+  int index = 0;
   for(const VehicleCorners& corners: path_option.second)
   {
     if( Collision(collision_set, corners ) )
     {
-      visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
-      visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
-      visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
+      // visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
+      // visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
+      // visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
+      path_option.first.free_path_length = index * lookahead_distance_/arc_samples_;
+      break;  // If there is a collision then break, because we dont need to look any further
     }else{
-      visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
-      visualization::DrawLine(corners.fr, corners.br, 0, local_viz_msg_ );
-      visualization::DrawLine(corners.fl, corners.bl, 0, local_viz_msg_ );
+      // visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
+      // visualization::DrawLine(corners.fr, corners.br, 0, local_viz_msg_ );
+      // visualization::DrawLine(corners.fl, corners.bl, 0, local_viz_msg_ );
     }
+    ++index;
   }
-  
+
   viz_pub_.publish( local_viz_msg_ );
 
   return;
