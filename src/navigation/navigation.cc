@@ -197,7 +197,7 @@ void Navigation::GenerateCurvatureSamples(){
   path_options_.push_back(std::make_pair(zero_curvature, zero_curvature_corners));
 
   // Reflect across x axis for negative curvatures instead of actually calculating it
-  for( int i=curvature_sample_count_; i >=  0; --i )
+  for( int i=curvature_sample_count_-1; i >=  0; --i )
   {
     PathOption reflected_curvature{};
     reflected_curvature.curvature = -path_options_[i].first.curvature; 
@@ -222,7 +222,7 @@ void Navigation::GenerateCurvatureSamples(){
   return;
 }
 
-void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleCorners> >& path_option, const float& lookahead_distance ){
+void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleCorners> >& path_option){
   Vector2f const pole( 0, 1/path_option.first.curvature ); 
   float corner_curvatures[4] = { 1/(pole - fr_).norm(),
                                  1/(pole - br_).norm(), 
@@ -231,7 +231,7 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
   // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
   std::sort(corner_curvatures, corner_curvatures+4);
 
-  visualization::ClearVisualizationMsg( local_viz_msg_ );
+  
   vector<Vector2f> collision_set;
   for(const auto& point: point_cloud_)
   {
@@ -250,21 +250,18 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
   {
     if( Collision(collision_set, corners ) )
     {
-      // visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
-      // visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
-      // visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
+      visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
+      visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
+      visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
       path_option.first.free_path_length = index * lookahead_distance_/arc_samples_;
       break;  // If there is a collision then break, because we dont need to look any further
     }else{
-      // visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
-      // visualization::DrawLine(corners.fr, corners.br, 0, local_viz_msg_ );
-      // visualization::DrawLine(corners.fl, corners.bl, 0, local_viz_msg_ );
+      visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
+      visualization::DrawLine(corners.fr, corners.br, 0, local_viz_msg_ );
+      visualization::DrawLine(corners.fl, corners.bl, 0, local_viz_msg_ );
     }
     ++index;
   }
-
-  viz_pub_.publish( local_viz_msg_ );
-
   return;
 }
 
@@ -292,16 +289,21 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  int path_option_id = 5;
-  EvaluatePathOption(path_options_[path_option_id], 2.0);
+  visualization::ClearVisualizationMsg( local_viz_msg_ );
   if(!nav_complete_)
   {
-    float const predicted_robot_vel = PredictedRobotVelocity();
-    float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
-    float const distance_needed_to_stop = 
-      (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
+    for(auto& path_option: path_options_)
+    {
+      EvaluatePathOption(path_option);
+    }
+    // float const predicted_robot_vel = PredictedRobotVelocity();
+    // float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
+    // float const distance_needed_to_stop = 
+    //   (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
-    TOC(path_options_[path_option_id].first.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
+    //TOC(selected_path_option.first.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
+    viz_pub_.publish( local_viz_msg_ );
+
   }
 
   return;
