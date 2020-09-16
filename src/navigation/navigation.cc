@@ -223,7 +223,7 @@ void Navigation::GenerateCurvatureSamples(){
 }
 
 void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleCorners> >& path_option){
-  Vector2f const pole( 0, 1/path_option.first.curvature ); 
+  Vector2f pole( 0, 1/path_option.first.curvature ); 
   float corner_curvatures[4] = { 1/(pole - fr_).norm(),
                                  1/(pole - br_).norm(), 
                                  1/(pole - fl_).norm(), 
@@ -241,7 +241,15 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
     {
       collision_set.push_back(point);
       visualization::DrawPoint( point, 255, local_viz_msg_ );
-    } 
+    } else if(curvature ==0){
+      //Handles zero curvature case for straight forward path
+      if( point[0]>0 &&
+          point[0]< lookahead_distance_)
+      {
+        collision_set.push_back(point);
+        visualization::DrawPoint( point, 255, local_viz_msg_ );
+      }
+    }
   }
 
   path_option.first.free_path_length = lookahead_distance_;
@@ -253,7 +261,8 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
       visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
       visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
       visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
-      path_option.first.free_path_length = index * lookahead_distance_/arc_samples_;
+      path_option.first.free_path_length = (index-1) * lookahead_distance_/arc_samples_;
+      
       break;  // If there is a collision then break, because we dont need to look any further
     }else{
       visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
@@ -262,6 +271,28 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
     }
     ++index;
   }
+
+  //Calculate closest point- i.e. the base link location at the end of the arc
+  pole[1]=fabs(pole[1]);
+  float const lookahead_theta = fabs(path_option.first.curvature * lookahead_distance_);
+  const float theta = (index-1)*lookahead_theta/arc_samples_;
+
+  Vector2f base_link;
+  base_link[0] = pole[0]+sin(theta)*pole.norm();
+  base_link[1] = pole[1]-cos(theta)*pole.norm();
+  if( path_option.first.curvature < 0 )
+  {
+    base_link[0] = pole[0]+sin(theta)*pole.norm();
+    base_link[1] *= -1.0; //mirror across base_link x-axis
+    }else{
+    //straightahead
+      base_link[0] = path_option.first.free_path_length;
+      base_link[1] = 0.0;
+  }
+  path_option.first.closest_point = base_link; //base_link coordinate at the final position before collision
+
+
+
   return;
 }
 
@@ -292,9 +323,11 @@ void Navigation::Run() {
   visualization::ClearVisualizationMsg( local_viz_msg_ );
   if(!nav_complete_)
   {
+    std::cout<<"RUN()"<<std::endl;
     for(auto& path_option: path_options_)
     {
       EvaluatePathOption(path_option);
+      std::cout<<path_option.first.closest_point[0]<<" "<<path_option.first.closest_point[1]<<std::endl;
     }
     // float const predicted_robot_vel = PredictedRobotVelocity();
     // float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
