@@ -196,7 +196,7 @@ class Navigation {
   float const lookahead_distance_ = 3.0;
 
   // carrot
-  Eigen::Vector2f const carrot_{0,2}; //m
+  Eigen::Vector2f const carrot_stick_{0,2}; //m
   
   // Point cloud
   std::vector<Eigen::Vector2f> point_cloud_;
