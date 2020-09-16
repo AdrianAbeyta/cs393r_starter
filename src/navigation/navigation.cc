@@ -231,7 +231,7 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
   // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
   std::sort(corner_curvatures, corner_curvatures+4);
 
-  
+  //Find all the points we could collide with for a given curvature
   vector<Vector2f> collision_set;
   for(const auto& point: point_cloud_)
   {
@@ -252,6 +252,7 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
     }
   }
 
+  //Find free path length by evaluating the collisions of the arc samples
   path_option.first.free_path_length = lookahead_distance_;
   int index = 0;
   for(const VehicleCorners& corners: path_option.second)
@@ -284,14 +285,12 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
   {
     base_link[0] = pole[0]+sin(theta)*pole.norm();
     base_link[1] *= -1.0; //mirror across base_link x-axis
-    }else{
+  }else if(path_option.first.curvature ==0){
     //straightahead
-      base_link[0] = path_option.first.free_path_length;
-      base_link[1] = 0.0;
+    base_link[0] = path_option.first.free_path_length;
+    base_link[1] = 0.0;
   }
   path_option.first.closest_point = base_link; //base_link coordinate at the final position before collision
-
-
 
   return;
 }
@@ -323,18 +322,22 @@ void Navigation::Run() {
   visualization::ClearVisualizationMsg( local_viz_msg_ );
   if(!nav_complete_)
   {
-    std::cout<<"RUN()"<<std::endl;
+    PathOption selected_path{path_options_[0].first};
     for(auto& path_option: path_options_)
     {
       EvaluatePathOption(path_option);
-      std::cout<<path_option.first.closest_point[0]<<" "<<path_option.first.closest_point[1]<<std::endl;
+      path_option.first.cost = -path_option.first.free_path_length+(path_option.first.closest_point-carrot_stick_).norm();
+      if(path_option.first.cost < selected_path.cost)
+      {
+        selected_path = path_option.first;
+      }
     }
-    // float const predicted_robot_vel = PredictedRobotVelocity();
-    // float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
-    // float const distance_needed_to_stop = 
-    //   (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
+    float const predicted_robot_vel = PredictedRobotVelocity();
+    float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
+    float const distance_needed_to_stop = 
+      (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
-    //TOC(selected_path_option.first.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
+    TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
     viz_pub_.publish( local_viz_msg_ );
 
   }
