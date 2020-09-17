@@ -125,6 +125,9 @@ class Navigation {
   Eigen::Vector2f BaseLinkPropagationStraight( const float& lookahead_distance ) const;
   Eigen::Vector2f BaseLinkPropagationCurve( const float& theta, const float& curvature ) const; 
 
+  bool PointInAreaOfInterestStraight(const Eigen::Vector2f point, const float& lookahead_distance ) const;
+  bool PointInAreaOfInterestCurved(const Eigen::Vector2f point, const float& theta) const; 
+
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -171,7 +174,7 @@ class Navigation {
   // Curvature - assume symmetry (i.e. max=-min)
   float const curvature_limit_ = 1.0;
   // How many samples you want on each side of zero (i.e. min to 0 and then 0 to max)
-  int const curvature_sample_count_= 15; // 
+  int const curvature_sample_count_= 10; // 
   // Path options
   std::vector< std::pair< PathOption, std::vector<VehicleCorners> > > path_options_;
   // Vehicle dimensions
@@ -188,7 +191,7 @@ class Navigation {
 
   // Collision checking arc samples
   int const arc_samples_ = 20;
-  float const lookahead_distance_ = 2.0;
+  float const lookahead_distance_ = 3.0;
 
   // carrot
   Eigen::Vector2f const carrot_stick_{3,0}; //m
