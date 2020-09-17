@@ -148,76 +148,117 @@ double Navigation::PredictedRobotVelocity(){
 }
 
 void Navigation::GenerateCurvatureSamples(){
-  path_options_.resize( curvature_sample_count_ );
+  path_options_.resize( 2*curvature_sample_count_+1 );
   //Calculate path for positive curvatures because the math is simple
-  for( size_t i=0; i <  path_options_.size(); ++i )
+  Vector2f base_link;
+  for(size_t i=0; i<path_options_.size(); ++i)
   {
-    path_options_[i].first.curvature = curvature_limit_ - i*(curvature_limit_/curvature_sample_count_);
-
-    Vector2f const pole( 0, 1/path_options_[i].first.curvature ); 
-    float const lookahead_theta = path_options_[i].first.curvature * lookahead_distance_;
-
-    for(int j=0; j<arc_samples_ + 1; ++j)
-    {
-      const float theta = j*lookahead_theta/arc_samples_;
-
-      Eigen::Rotation2D<float> rot2(theta);
-
+    path_options_[i].first.curvature = -curvature_limit_ + i*(curvature_limit_/curvature_sample_count_);
+    if(path_options_[i].first.curvature != 0){
+      float const lookahead_theta = path_options_[i].first.curvature * lookahead_distance_;
       Vector2f base_link;
-      base_link[0] = pole[0]+sin(theta)*pole.norm();
-      base_link[1] = pole[1]-cos(theta)*pole.norm();
+      for(int j=0; j<arc_samples_ + 1; ++j)
+      {
+        const float theta = j*lookahead_theta/arc_samples_;
+
+        base_link = BaseLinkPropagationCurve( theta, path_options_[i].first.curvature );
+
+        Eigen::Rotation2D<float> rot(theta);
+
+        VehicleCorners temp;
+        temp.fr = base_link + rot*fr_;
+        temp.fl = base_link + rot*fl_;
+        temp.bl = base_link + rot*bl_;
+        temp.br = base_link + rot*br_;
+
+        path_options_[i].second.push_back( temp );  
+      }
+    }else{
+      for(int j=0; j<arc_samples_ + 1; ++j)
+      {
+        const float lookahead = j*lookahead_distance_/arc_samples_;
+
+        base_link = BaseLinkPropagationStraight( lookahead );
+
+        VehicleCorners temp;
+        temp.fr = base_link + fr_;
+        temp.fl = base_link + fl_;
+        temp.bl = base_link + bl_;
+        temp.br = base_link + br_;
+
+        path_options_[i].second.push_back( temp );  
+      }
+    }
+  }
+
+  // for( size_t i=0; i <  path_options_.size(); ++i )
+  // {
+  //   path_options_[i].first.curvature = curvature_limit_ - i*(curvature_limit_/curvature_sample_count_);
+
+  //   Vector2f const pole( 0, 1/path_options_[i].first.curvature ); 
+  //   float const lookahead_theta = path_options_[i].first.curvature * lookahead_distance_;
+
+  //   for(int j=0; j<arc_samples_ + 1; ++j)
+  //   {
+  //     const float theta = j*lookahead_theta/arc_samples_;
+
+  //     Eigen::Rotation2D<float> rot2(theta);
+
+  //     Vector2f base_link;
+  //     base_link[0] = pole[0]+sin(theta)*pole.norm();
+  //     base_link[1] = pole[1]-cos(theta)*pole.norm();
       
-      VehicleCorners temp;
-      temp.fr = base_link + rot2*fr_;
-      temp.fl = base_link + rot2*fl_;
-      temp.bl = base_link + rot2*bl_;
-      temp.br = base_link + rot2*br_;
+  //     VehicleCorners temp;
+  //     temp.fr = base_link + rot2*fr_;
+  //     temp.fl = base_link + rot2*fl_;
+  //     temp.bl = base_link + rot2*bl_;
+  //     temp.br = base_link + rot2*br_;
 
-      path_options_[i].second.push_back( temp );    
-    }
-  }
-  // Zero curvature option, unique case so its calculated individually
-  PathOption zero_curvature{};
-  zero_curvature.curvature = 0.0;
-  std::vector<VehicleCorners> zero_curvature_corners(arc_samples_+1);
-  for(int j=0; j< arc_samples_+1; ++j)
-  {
-    const float lookahead = j*lookahead_distance_/arc_samples_;
+  //     path_options_[i].second.push_back( temp );    
+  //   }
+  // }
+  // // Zero curvature option, unique case so its calculated individually
+  // PathOption zero_curvature{};
+  // zero_curvature.curvature = 0.0;
+  // std::vector<VehicleCorners> zero_curvature_corners(arc_samples_+1);
+  // for(int j=0; j< arc_samples_+1; ++j)
+  // {
+  //   const float lookahead = j*lookahead_distance_/arc_samples_;
 
-    Vector2f base_link;
-    base_link[0] = lookahead;
-    base_link[1] = 0;
-    VehicleCorners temp;
-    temp.fr = base_link + fr_;
-    temp.fl = base_link + fl_;
-    temp.bl = base_link + bl_;
-    temp.br = base_link + br_;
-    zero_curvature_corners[j]=temp;
-  }
-  path_options_.push_back(std::make_pair(zero_curvature, zero_curvature_corners));
+  //   Vector2f base_link;
+  //   base_link[0] = lookahead;
+  //   base_link[1] = 0;
+  //   VehicleCorners temp;
+  //   temp.fr = base_link + fr_;
+  //   temp.fl = base_link + fl_;
+  //   temp.bl = base_link + bl_;
+  //   temp.br = base_link + br_;
+  //   zero_curvature_corners[j]=temp;
+  // }
+  // path_options_.push_back(std::make_pair(zero_curvature, zero_curvature_corners));
 
-  // Reflect across x axis for negative curvatures instead of actually calculating it
-  for( int i=curvature_sample_count_-1; i >=  0; --i )
-  {
-    PathOption reflected_curvature{};
-    reflected_curvature.curvature = -path_options_[i].first.curvature; 
-    std::vector<VehicleCorners> reflected_corners;
-    for(int j=0; j< arc_samples_+1; ++j)
-    {
-      // Multiplying the y coordinate by negative 1 is a reflection about the x axis
-      VehicleCorners temp;
-      temp.fr = path_options_[i].second[j].fr;
-      temp.fr[1] *=-1;
-      temp.fl = path_options_[i].second[j].fl;
-      temp.fl[1] *=-1;
-      temp.bl = path_options_[i].second[j].bl;
-      temp.bl[1] *=-1;
-      temp.br = path_options_[i].second[j].br;
-      temp.br[1] *=-1;
-      reflected_corners.push_back(temp);
-    }
-    path_options_.push_back(std::make_pair(reflected_curvature, reflected_corners));
-  }
+  // // Reflect across x axis for negative curvatures instead of actually calculating it
+  // for( int i=curvature_sample_count_-1; i >=  0; --i )
+  // {
+  //   PathOption reflected_curvature{};
+  //   reflected_curvature.curvature = -path_options_[i].first.curvature; 
+  //   std::vector<VehicleCorners> reflected_corners;
+  //   for(int j=0; j< arc_samples_+1; ++j)
+  //   {
+  //     // Multiplying the y coordinate by negative 1 is a reflection about the x axis
+  //     VehicleCorners temp;
+  //     temp.fr = path_options_[i].second[j].fr;
+  //     temp.fr[1] *=-1;
+  //     temp.fl = path_options_[i].second[j].fl;
+  //     temp.fl[1] *=-1;
+  //     temp.bl = path_options_[i].second[j].bl;
+  //     temp.bl[1] *=-1;
+  //     temp.br = path_options_[i].second[j].br;
+  //     temp.br[1] *=-1;
+  //     reflected_corners.push_back(temp);
+  //   }
+  //   path_options_.push_back(std::make_pair(reflected_curvature, reflected_corners));
+  // }
 
   return;
 }
@@ -274,7 +315,7 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
   }
 
   //Calculate closest point- i.e. the base link location at the end of the arc
-  float const lookahead_theta = fabs(path_option.first.curvature * lookahead_distance_);
+  float const lookahead_theta = fabs(path_option.first.curvature * lookahead_distance_);  //todo move these inside the non zero curvature option
   const float theta = (index-1)*lookahead_theta/arc_samples_;
 
   if( path_option.first.curvature != 0 )
