@@ -147,7 +147,7 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
 
     //Find free path length by evaluating the collisions of the arc samples
     path_option.first.free_path_length = lookahead_distance_;
-      int index = 0;
+    int index = 0;
     for(const VehicleCorners& corners: path_option.second)
     {
       if( Collision(collision_set, corners ) )
