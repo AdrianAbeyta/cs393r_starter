@@ -119,7 +119,7 @@ class Navigation {
   * @see Mutates path_options_
   **/
   void EvaluatePathOption( std::pair< PathOption, std::vector<VehicleCorners> >& path_option);
-
+  
   /**
   * @note 
   *
@@ -131,6 +131,9 @@ class Navigation {
   * @see Mutates drive_msg_ and command_history_
   **/
   void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop  );
+
+  Eigen::Vector2f BaseLinkPropagationStraight(const float& lookahead_distance) const;
+  Eigen::Vector2f BaseLinkPropagationCurve(const float& lookahead_theta, const float& curvature) const; 
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -205,8 +208,6 @@ class Navigation {
 
   // Run function call rate
   float const time_step_ = 1.0/20; // s
-
-
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
