@@ -274,23 +274,15 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
   }
 
   //Calculate closest point- i.e. the base link location at the end of the arc
-  pole[1]=fabs(pole[1]);
   float const lookahead_theta = fabs(path_option.first.curvature * lookahead_distance_);
   const float theta = (index-1)*lookahead_theta/arc_samples_;
 
-  Vector2f base_link;
-  base_link[0] = pole[0]+sin(theta)*pole.norm();
-  base_link[1] = pole[1]-cos(theta)*pole.norm();
-  if( path_option.first.curvature < 0 )
+  if( path_option.first.curvature != 0 )
   {
-    base_link[0] = pole[0]+sin(theta)*pole.norm();
-    base_link[1] *= -1.0; //mirror across base_link x-axis
-  }else if(path_option.first.curvature ==0){
-    //straightahead
-    base_link = BaseLinkPropagationStraight( path_option.first.free_path_length );
+    path_option.first.closest_point = BaseLinkPropagationCurve( theta, path_option.first.curvature );
+  }else{
+    path_option.first.closest_point = BaseLinkPropagationStraight( path_option.first.free_path_length );
   }
-  path_option.first.closest_point = base_link; //base_link coordinate at the final position before collision
-
   return;
 }
 
@@ -302,6 +294,23 @@ Vector2f Navigation::BaseLinkPropagationStraight(const float& lookahead_distance
   base_link_location[0] += lookahead_distance;
   
   return base_link_location; 
+}
+
+Vector2f Navigation::BaseLinkPropagationCurve(const float& theta, const float& curvature) const {
+  
+  //Set base link at origin (0,0)
+  Vector2f base_link_location (0,1.0/fabs(curvature));
+
+  //Calculate the base link location at the end of the arc
+  base_link_location[0] += sin(theta )*(1.0/fabs(curvature) );
+  base_link_location[1] += -cos(theta )*(1.0/fabs(curvature) );
+  if (curvature < 0 ) //Curvature is Negative
+  {
+
+    base_link_location[1] *= -1.0;
+    
+  }
+  return base_link_location;
 }
 
 
