@@ -287,13 +287,23 @@ void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleC
     base_link[1] *= -1.0; //mirror across base_link x-axis
   }else if(path_option.first.curvature ==0){
     //straightahead
-    base_link[0] = path_option.first.free_path_length;
-    base_link[1] = 0.0;
+    base_link = BaseLinkPropagationStraight( path_option.first.free_path_length );
   }
   path_option.first.closest_point = base_link; //base_link coordinate at the final position before collision
 
   return;
 }
+
+Vector2f Navigation::BaseLinkPropagationStraight(const float& lookahead_distance ) const {
+ 
+ Vector2f base_link_location ( 0, 0 );
+//Update coordnates based on distance traveled.
+
+  base_link_location[0] += lookahead_distance;
+  
+  return base_link_location; 
+}
+
 
 void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop ){
   AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Defaults to "Cruise"- means acceleration = 0.0
@@ -339,9 +349,9 @@ void Navigation::Run() {
     
     TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
     viz_pub_.publish( local_viz_msg_ );
-
+    
   }
-
+  
   return;
 }
 
