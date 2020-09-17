@@ -117,7 +117,6 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
 }
 
 void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double time ) {
-  point_cloud_ = point_cloud; 
   for(auto& path_option: path_options_)
   {
     Vector2f pole( 0, 1/path_option.first.curvature ); 

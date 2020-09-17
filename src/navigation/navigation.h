@@ -193,9 +193,6 @@ class Navigation {
   // carrot
   Eigen::Vector2f const carrot_stick_{3,0}; //m
   
-  // Point cloud
-  std::vector<Eigen::Vector2f> point_cloud_;
-
   // Run function call rate
   float const time_step_ = 1.0/20; // s
   ////HELMS DEEP ADDITIONS////
