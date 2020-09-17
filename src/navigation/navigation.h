@@ -132,8 +132,8 @@ class Navigation {
   **/
   void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop  );
 
-  Eigen::Vector2f BaseLinkPropagationStraight(const float& lookahead_distance) const;
-  Eigen::Vector2f BaseLinkPropagationCurve(const float& theta, const float& curvature) const; 
+  Eigen::Vector2f BaseLinkPropagationStraight( const float& lookahead_distance ) const;
+  Eigen::Vector2f BaseLinkPropagationCurve( const float& theta, const float& curvature ) const; 
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -181,14 +181,14 @@ class Navigation {
   // Curvature - assume symmetry (i.e. max=-min)
   float const curvature_limit_ = 1.0;
   // How many samples you want on each side of zero (i.e. min to 0 and then 0 to max)
-  int const curvature_sample_count_= 10; // 
+  int const curvature_sample_count_= 20; // 
   // Path options
   std::vector< std::pair< PathOption, std::vector<VehicleCorners> > > path_options_;
   // Vehicle dimensions
-  float const length_ = 0.75;  // m
-  float const wheel_base_ = 0.60;  // m
-  float const width_ = 0.45;  // m
-  float const track_ = 0.35;  // m
+  float const length_ = 0.535;  // m
+  float const wheel_base_ = 0.40;  // m
+  float const width_ = 0.281;  // m
+  float const track_ = 0.25;  // m
   float const margin_ = 0.1; // m
   // Vehicle coordinates in base_link frame
   Eigen::Vector2f fr_; // front right
@@ -197,8 +197,8 @@ class Navigation {
   Eigen::Vector2f bl_; // back left
 
   // Collision checking arc samples
-  int const arc_samples_ = 20;
-  float const lookahead_distance_ = 2.0;
+  int const arc_samples_ = 30;
+  float const lookahead_distance_ = 3.0;
 
   // carrot
   Eigen::Vector2f const carrot_stick_{3,0}; //m
