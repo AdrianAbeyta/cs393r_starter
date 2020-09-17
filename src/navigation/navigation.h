@@ -133,7 +133,7 @@ class Navigation {
   void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop  );
 
   Eigen::Vector2f BaseLinkPropagationStraight(const float& lookahead_distance) const;
-  Eigen::Vector2f BaseLinkPropagationCurve(const float& lookahead_theta, const float& curvature) const; 
+  Eigen::Vector2f BaseLinkPropagationCurve(const float& theta, const float& curvature) const; 
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
