@@ -126,21 +126,26 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
                                  1/(pole - bl_).norm() };
     // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
     std::sort(corner_curvatures, corner_curvatures+4);
+    // How far in radians we are looking down the arc
+    float const lookahead_theta = fabs(path_option.first.curvature * lookahead_distance_);  //todo move these inside the non zero curvature option
     //Find all the points we could collide with for a given curvature
     vector<Vector2f> collision_set;
     for(const auto& point: point_cloud)
     {
       float const curvature = 1/(pole - point).norm();
-      if( curvature < corner_curvatures[3] &&
-          curvature > corner_curvatures[0] ) 
-      {
-        collision_set.push_back( point );
-      } else if( curvature == 0 )
-      {
-        if( point[0] > 0 &&
-            point[0] < lookahead_distance_)
+      if( curvature != 0){
+        if( PointInAreaOfInterestCurved(point, lookahead_theta) && 
+            curvature < corner_curvatures[3] &&
+            curvature > corner_curvatures[0] ) 
         {
           collision_set.push_back( point );
+          visualization::DrawPoint(point, 255, local_viz_msg_);
+        } 
+      }else{
+        if( PointInAreaOfInterestStraight(point, lookahead_distance_) )
+        {
+          collision_set.push_back( point );
+          visualization::DrawPoint(point, 255, local_viz_msg_);
         } 
       }
     }
@@ -167,7 +172,6 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
     }
 
     //Calculate closest point- i.e. the base link location at the end of the arc
-    float const lookahead_theta = fabs(path_option.first.curvature * lookahead_distance_);  //todo move these inside the non zero curvature option
     const float theta = (index-1)*lookahead_theta/arc_samples_;
 
     if( path_option.first.curvature != 0 )
@@ -175,8 +179,7 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
       path_option.first.closest_point = BaseLinkPropagationCurve( theta, path_option.first.curvature );
     }else{
       path_option.first.closest_point = BaseLinkPropagationStraight( path_option.first.free_path_length );
-    }
-    visualization::DrawPoint( path_option.first.closest_point, 255, local_viz_msg_ );
+    }    
   }
   return;
 }
@@ -280,6 +283,25 @@ Vector2f Navigation::BaseLinkPropagationCurve(const float& theta, const float& c
   return base_link_location;
 }
 
+bool Navigation::PointInAreaOfInterestStraight(const Eigen::Vector2f point, const float& lookahead_distance ) const{
+  //TODO change width to account for error margin
+  if( 0 < point[0] &&
+      point[0] < lookahead_distance && 
+      fabs(point[1]) < width_) 
+  {
+    return true;
+  }
+  return false;
+}
+
+bool Navigation::PointInAreaOfInterestCurved(const Eigen::Vector2f point, const float& theta) const{
+  const float position = fabs(atan2(point[1], point[0]));
+  if(0 < position && position < theta)
+  {
+    return true;
+  }
+  return false;
+}
 
 void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop ){
   AccelerationCommand commanded_acceleration{0.0, ros::Time::now()}; //Defaults to "Cruise"- means acceleration = 0.0
@@ -329,6 +351,9 @@ void Navigation::Run() {
   
   return;
 }
+
+
+
 
 // Create Helper functions here
 // Milestone 1 will fill out part of this class.
