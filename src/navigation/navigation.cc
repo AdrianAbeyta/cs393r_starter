@@ -263,69 +263,6 @@ void Navigation::GenerateCurvatureSamples(){
   return;
 }
 
-void Navigation::EvaluatePathOption( std::pair< PathOption, std::vector<VehicleCorners> >& path_option){
-  Vector2f pole( 0, 1/path_option.first.curvature ); 
-  float corner_curvatures[4] = { 1/(pole - fr_).norm(),
-                                 1/(pole - br_).norm(), 
-                                 1/(pole - fl_).norm(), 
-                                 1/(pole - bl_).norm() };
-  // Sorts the curvatures from fastest (smallest curvature) to slowest (largest curvature) corners
-  std::sort(corner_curvatures, corner_curvatures+4);
-
-  //Find all the points we could collide with for a given curvature
-  vector<Vector2f> collision_set;
-  for(const auto& point: point_cloud_)
-  {
-    float const curvature = 1/(pole - point).norm();
-    if( curvature < corner_curvatures[3] &&
-        curvature > corner_curvatures[0] ) 
-    {
-      collision_set.push_back( point );
-    } else if( curvature == 0 ){
-      if( point[0] > 0 &&
-          point[0] < lookahead_distance_)
-      {
-        collision_set.push_back( point );
-      }
-    }
-  }
-
-  //Find free path length by evaluating the collisions of the arc samples
-  path_option.first.free_path_length = lookahead_distance_;
-  int index = 0;
-  for(const VehicleCorners& corners: path_option.second)
-  {
-    if( Collision(collision_set, corners ) )
-    {
-      visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
-      visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
-      visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
-      path_option.first.free_path_length = (index-1) * lookahead_distance_/arc_samples_;
-      
-      break;  // If there is a collision then break, because we dont need to look any further
-    }else{
-      visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
-      visualization::DrawLine(corners.fr, corners.br, 0, local_viz_msg_ );
-      visualization::DrawLine(corners.fl, corners.bl, 0, local_viz_msg_ );
-    }
-    ++index;
-  }
-
-  //Calculate closest point- i.e. the base link location at the end of the arc
-  float const lookahead_theta = fabs(path_option.first.curvature * lookahead_distance_);  //todo move these inside the non zero curvature option
-  const float theta = (index-1)*lookahead_theta/arc_samples_;
-
-  if( path_option.first.curvature != 0 )
-  {
-    path_option.first.closest_point = BaseLinkPropagationCurve( theta, path_option.first.curvature );
-  }else{
-    path_option.first.closest_point = BaseLinkPropagationStraight( path_option.first.free_path_length );
-  }
-  visualization::DrawPoint( path_option.first.closest_point, 255, local_viz_msg_ );
-
-  return;
-}
-
 Vector2f Navigation::BaseLinkPropagationStraight(const float& lookahead_distance ) const {
   Vector2f base_link_location( 0, 0 );
   base_link_location[0] += lookahead_distance;

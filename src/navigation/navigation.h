@@ -109,17 +109,7 @@ class Navigation {
   * @see Mutates curvature_samples_
   **/
   void GenerateCurvatureSamples();
-  // Generate curvature samples
-  /**
-  * @note If there is no collision on the path the lookahead distance will equal the free path length
-  *
-  * @brief Calculates the path option point cloud based collision parameters
-  * @param path_option_ The path option considered, each one has a unique sampled curvature
-  * @param lookahead_distance How far along the arc specified by the curvature to consider collision risk
-  * @see Mutates path_options_
-  **/
-  void EvaluatePathOption( std::pair< PathOption, std::vector<VehicleCorners> >& path_option);
-  
+ 
   /**
   * @note 
   *
