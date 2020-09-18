@@ -187,7 +187,30 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
 
     //Calculate closest point- i.e. the base link location at the end of the arc
     const float theta = (index-1)*lookahead_theta/arc_samples_;
- 
+    path_option.first.clearance = 10;
+    for( const auto& point: clearance_set )
+    {
+      if( path_option.first.curvature != 0 )
+      {
+        const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, theta);
+        if( point_in_lookahead_arc )
+        {
+          const float clearance = fabs( 1/fabs(path_option.first.curvature) - (pole - point).norm() );
+          if( clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
+        }
+      }
+      else
+      {
+        const bool point_in_lookahead_distance = PointInAreaOfInterestStraight(point, path_option.first.free_path_length);
+        if ( point_in_lookahead_distance )
+        {
+          const float clearance = fabs(point[1]);
+          if (clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
+        }
+      }
+    }
+
+
     if( path_option.first.curvature != 0 )
     {
       path_option.first.closest_point = BaseLinkPropagationCurve( theta, path_option.first.curvature );
