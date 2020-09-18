@@ -133,9 +133,9 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
     vector<Vector2f> clearance_set;
     for(const auto& point: point_cloud)
     {
-      const float curvature = 1/(pole - point).norm();
       if( path_option.first.curvature != 0){
         const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, lookahead_theta);
+        const float curvature = 1/(pole - point).norm();
         if( point_in_lookahead_arc && 
             curvature < corner_curvatures[3] &&
             curvature > corner_curvatures[0] ) 
