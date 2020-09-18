@@ -134,7 +134,7 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
     for(const auto& point: point_cloud)
     {
       const float curvature = 1/(pole - point).norm();
-      if( curvature != 0){
+      if( path_option.first.curvature != 0){
         const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, lookahead_theta);
         if( point_in_lookahead_arc && 
             curvature < corner_curvatures[3] &&
@@ -187,7 +187,7 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
 
     //Calculate closest point- i.e. the base link location at the end of the arc
     const float theta = (index-1)*lookahead_theta/arc_samples_;
-
+ 
     if( path_option.first.curvature != 0 )
     {
       path_option.first.closest_point = BaseLinkPropagationCurve( theta, path_option.first.curvature );
