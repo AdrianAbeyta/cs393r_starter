@@ -130,23 +130,37 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
     float const lookahead_theta = fabs(path_option.first.curvature * lookahead_distance_);  //todo move these inside the non zero curvature option
     //Find all the points we could collide with for a given curvature
     vector<Vector2f> collision_set;
+    vector<Vector2f> clearance_set;
     for(const auto& point: point_cloud)
     {
-      float const curvature = 1/(pole - point).norm();
+      const float curvature = 1/(pole - point).norm();
       if( curvature != 0){
-        if( PointInAreaOfInterestCurved(point, lookahead_theta) && 
+        const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, lookahead_theta);
+        if( point_in_lookahead_arc && 
             curvature < corner_curvatures[3] &&
             curvature > corner_curvatures[0] ) 
         {
           collision_set.push_back( point );
-          visualization::DrawPoint(point, 255, local_viz_msg_);
-        } 
+          // visualization::DrawPoint( point, 255, local_viz_msg_ );
+        }
+        else if( point_in_lookahead_arc ){
+          clearance_set.push_back(point);
+          // visualization::DrawPoint( point, 255255, local_viz_msg_ );
+        }
       }else{
-        if( PointInAreaOfInterestStraight(point, lookahead_distance_) )
+        const bool point_in_lookahead_distance = PointInAreaOfInterestStraight(point, lookahead_distance_);
+        //TODO change width_ to account for margin
+        if( point_in_lookahead_distance &&
+            fabs(point[1]) < width_ )
         {
           collision_set.push_back( point );
-          visualization::DrawPoint(point, 255, local_viz_msg_);
-        } 
+          // visualization::DrawPoint( point, 255, local_viz_msg_ );
+        }
+        else if( point_in_lookahead_distance )
+        {
+          clearance_set.push_back(point);
+          // visualization::DrawPoint( point, 255255, local_viz_msg_ );
+        }
       }
     }
 
@@ -284,10 +298,8 @@ Vector2f Navigation::BaseLinkPropagationCurve(const float& theta, const float& c
 }
 
 bool Navigation::PointInAreaOfInterestStraight(const Eigen::Vector2f point, const float& lookahead_distance ) const{
-  //TODO change width to account for error margin
   if( 0 < point[0] &&
-      point[0] < lookahead_distance && 
-      fabs(point[1]) < width_) 
+      point[0] < lookahead_distance) 
   {
     return true;
   }
