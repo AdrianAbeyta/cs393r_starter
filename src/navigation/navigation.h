@@ -126,7 +126,7 @@ class Navigation {
   Eigen::Vector2f BaseLinkPropagationCurve( const float& theta, const float& curvature ) const; 
 
   bool PointInAreaOfInterestStraight(const Eigen::Vector2f point, const float& lookahead_distance ) const;
-  bool PointInAreaOfInterestCurved(const Eigen::Vector2f point, const float& theta) const; 
+  bool PointInAreaOfInterestCurved(const Eigen::Vector2f& point, const float& theta, const Eigen::Vector2f& pole) const; 
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
