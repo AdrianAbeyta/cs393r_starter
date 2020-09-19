@@ -120,6 +120,7 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
   for(auto& path_option: path_options_)
   {
     Vector2f pole( 0, 1/path_option.first.curvature ); 
+
     float corner_curvatures[4] = { 1/(pole - fr_).norm(),
                                  1/(pole - br_).norm(), 
                                  1/(pole - fl_).norm(), 
@@ -134,18 +135,16 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
     for(const auto& point: point_cloud)
     {
       if( path_option.first.curvature != 0){
-        const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, lookahead_theta);
+        const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, lookahead_theta, pole);
         const float curvature = 1/(pole - point).norm();
         if( point_in_lookahead_arc && 
             curvature < corner_curvatures[3] &&
             curvature > corner_curvatures[0] ) 
         {
           collision_set.push_back( point );
-          // visualization::DrawPoint( point, 255, local_viz_msg_ );
         }
         else if( point_in_lookahead_arc ){
           clearance_set.push_back(point);
-          // visualization::DrawPoint( point, 255255, local_viz_msg_ );
         }
       }else{
         const bool point_in_lookahead_distance = PointInAreaOfInterestStraight(point, lookahead_distance_);
@@ -154,12 +153,10 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
             fabs(point[1]) < width_ )
         {
           collision_set.push_back( point );
-          // visualization::DrawPoint( point, 255, local_viz_msg_ );
         }
         else if( point_in_lookahead_distance )
         {
           clearance_set.push_back(point);
-          // visualization::DrawPoint( point, 255255, local_viz_msg_ );
         }
       }
     }
@@ -187,28 +184,28 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
 
     //Calculate closest point- i.e. the base link location at the end of the arc
     const float theta = (index-1)*lookahead_theta/arc_samples_;
-    path_option.first.clearance = 10;
-    for( const auto& point: clearance_set )
-    {
-      if( path_option.first.curvature != 0 )
-      {
-        const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, theta);
-        if( point_in_lookahead_arc )
-        {
-          const float clearance = fabs( 1/fabs(path_option.first.curvature) - (pole - point).norm() );
-          if( clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
-        }
-      }
-      else
-      {
-        const bool point_in_lookahead_distance = PointInAreaOfInterestStraight(point, path_option.first.free_path_length);
-        if ( point_in_lookahead_distance )
-        {
-          const float clearance = fabs(point[1]);
-          if (clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
-        }
-      }
-    }
+    // path_option.first.clearance = 10;
+    // for( const auto& point: clearance_set )
+    // {
+    //   if( path_option.first.curvature != 0 )
+    //   {
+    //     const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, theta);
+    //     if( point_in_lookahead_arc )
+    //     {
+    //       const float clearance = fabs( 1/fabs(path_option.first.curvature) - (pole - point).norm() );
+    //       if( clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
+    //     }
+    //   }
+    //   else
+    //   {
+    //     const bool point_in_lookahead_distance = PointInAreaOfInterestStraight(point, path_option.first.free_path_length);
+    //     if ( point_in_lookahead_distance )
+    //     {
+    //       const float clearance = fabs(point[1]);
+    //       if (clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
+    //     }
+    //   }
+    // }
 
 
     if( path_option.first.curvature != 0 )
@@ -329,13 +326,20 @@ bool Navigation::PointInAreaOfInterestStraight(const Eigen::Vector2f point, cons
   return false;
 }
 
-bool Navigation::PointInAreaOfInterestCurved(const Eigen::Vector2f point, const float& theta) const{
-  const float position = fabs(atan2(point[1], point[0]));
-  if(0 < position && position < theta)
+bool Navigation::PointInAreaOfInterestCurved(const Vector2f& point, const float& theta, const Vector2f& pole) const{
+  Vector2f pole_local_point = pole-point;
+  float point_theta=theta;
+  if(pole[1]>0)
   {
-    return true;
+    point_theta = atan2(pole_local_point[1], pole_local_point[0]) - M_PI/2;
+  }else if(pole[1]<0){
+    point_theta =  atan2(-1.0*pole_local_point[1], pole_local_point[0]) - M_PI/2;
+  }else{
+    std::cout<< "You gave PointInAreaOfInterestCurved() a bad pole"<<std::endl;
   }
-  return false;
+
+  return 0<point_theta  && point_theta<theta ? 1 : 0;
+  
 }
 
 void Navigation::TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop ){
