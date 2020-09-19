@@ -119,7 +119,7 @@ void Navigation::UpdateOdometry(const Vector2f& loc,
 void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double time ) {
   for(auto& path_option: path_options_)
   {
-    Vector2f pole( 0, 1/path_option.first.curvature ); 
+    const Vector2f pole( 0, 1/path_option.first.curvature ); 
 
     float corner_curvatures[4] = { 1/(pole - fr_).norm(),
                                  1/(pole - br_).norm(), 
@@ -172,7 +172,6 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
         visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
         visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
         path_option.first.free_path_length = (index-1) * lookahead_distance_/arc_samples_;
-      
         break;  // If there is a collision then break, because we dont need to look any further
       }else{
         visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
@@ -184,30 +183,29 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
 
     //Calculate closest point- i.e. the base link location at the end of the arc
     const float theta = (index-1)*lookahead_theta/arc_samples_;
-    // path_option.first.clearance = 10;
-    // for( const auto& point: clearance_set )
-    // {
-    //   if( path_option.first.curvature != 0 )
-    //   {
-    //     const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, theta);
-    //     if( point_in_lookahead_arc )
-    //     {
-    //       const float clearance = fabs( 1/fabs(path_option.first.curvature) - (pole - point).norm() );
-    //       if( clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
-    //     }
-    //   }
-    //   else
-    //   {
-    //     const bool point_in_lookahead_distance = PointInAreaOfInterestStraight(point, path_option.first.free_path_length);
-    //     if ( point_in_lookahead_distance )
-    //     {
-    //       const float clearance = fabs(point[1]);
-    //       if (clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
-    //     }
-    //   }
-    // }
-
-
+    path_option.first.clearance = 10;
+    for( const auto& point: clearance_set )
+    {
+      if( path_option.first.curvature != 0 )
+      {
+        const bool point_in_lookahead_arc = PointInAreaOfInterestCurved(point, theta, pole);
+        if( point_in_lookahead_arc )
+        {
+          const float clearance = fabs( 1/fabs(path_option.first.curvature) - (pole - point).norm() );
+          if( clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
+        }
+      }
+      else
+      {
+        const bool point_in_lookahead_distance = PointInAreaOfInterestStraight(point, path_option.first.free_path_length);
+        if ( point_in_lookahead_distance )
+        {
+          const float clearance = fabs(point[1]);
+          if (clearance < path_option.first.clearance ) path_option.first.clearance = clearance;
+        }
+      }
+    }
+  
     if( path_option.first.curvature != 0 )
     {
       path_option.first.closest_point = BaseLinkPropagationCurve( theta, path_option.first.curvature );
@@ -371,7 +369,7 @@ void Navigation::Run() {
     PathOption selected_path{path_options_[0].first};
     for(auto& path_option: path_options_)
     {
-      path_option.first.cost = -2.1*path_option.first.free_path_length+(path_option.first.closest_point-carrot_stick_).norm();
+      path_option.first.cost = -3*path_option.first.free_path_length+0.5*(path_option.first.closest_point-carrot_stick_).norm()-0.5*path_option.first.clearance;
       if(path_option.first.cost < selected_path.cost)
       {
         selected_path = path_option.first;
