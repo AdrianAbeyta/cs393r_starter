@@ -179,15 +179,14 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
 
   else
   {
+    const float delta_x = odom_loc.x() - prev_odom_loc_.x();
+    const float delta_y = odom_loc.y() - prev_odom_loc_.y();
+    const float delta_a = odom_angle - prev_odom_angle_;
+
     for(auto& particle: particles_)
     {
-      const float delta_x = odom_loc.x() - prev_odom_loc_.x();
       particle.loc.x() += rng_.Gaussian( delta_x, Q_(0,0)*fabs(delta_x) ); 
-
-      const float delta_y = odom_loc.y() - prev_odom_loc_.y();
       particle.loc.y() += rng_.Gaussian( delta_y, Q_(1,1)*fabs(delta_y) ); 
-
-      const float delta_a = odom_angle - prev_odom_angle_;
       particle.angle += rng_.Gaussian( delta_a, Q_(2,2)*fabs(delta_a) ); 
     }
 
@@ -202,6 +201,8 @@ void ParticleFilter::Initialize(const string& map_file,
                                 const Vector2f& loc,
                                 const float angle) {
   odom_initialized_ = false;
+
+  map_ = VectorMap(map_file);
 
   // TODO- what do you do with the map_file name?
   for(auto& particle: particles_)
