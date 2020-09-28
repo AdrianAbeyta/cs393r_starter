@@ -180,7 +180,7 @@ void ParticleFilter::Initialize(const string& map_file,
     particle.loc.x() = rng_.Gaussian( loc.x(), I_xx_ );
     particle.loc.y() = rng_.Gaussian( loc.y(), I_yy_ );
     particle.angle = rng_.Gaussian( angle, I_aa_ );
-    particle.weight = 1/np_;
+    particle.weight = 1.0/np_;
   }
 }
 
