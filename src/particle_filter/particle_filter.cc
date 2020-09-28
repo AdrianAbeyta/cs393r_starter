@@ -55,10 +55,9 @@ config_reader::ConfigReader config_reader_({"config/particle_filter.lua"});
 ParticleFilter::ParticleFilter() :
     prev_odom_loc_(0, 0),
     prev_odom_angle_(0),
-    odom_initialized_(false) 
+    odom_initialized_(false)
 {
-  particles_.resize(FLAGS_num_particles);
-
+  particles_.resize(FLAGS_num_particles); 
   I_<< I_xx_, 0,     0,
        0,     I_yy_, 0,
        0,     0,     I_aa_;
@@ -169,19 +168,41 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
   // A new odometry value is available (in the odom frame)
   // Implement the motion model predict step here, to propagate the particles
   // forward based on odometry.
+  if(!odom_initialized_)
+  {
+    prev_odom_loc_ = odom_loc;
+    prev_odom_angle_ = odom_angle;
+    odom_initialized_ = true;
 
+    return;
+  }
 
-  // You will need to use the Gaussian random number generator provided. For
-  // example, to generate a random number from a Gaussian with mean 0, and
-  // standard deviation 2:
-  // float x = rng_.Gaussian(0.0, 2.0);
-  // printf("Random number drawn from Gaussian distribution with 0 mean and "
-  //        "standard deviation of 2 : %f\n", x);
+  else
+  {
+    for(auto& particle: particles_)
+    {
+      const float delta_x = odom_loc.x() - prev_odom_loc_.x();
+      particle.loc.x() += rng_.Gaussian( delta_x, Q_(0,0)*fabs(delta_x) ); 
+
+      const float delta_y = odom_loc.y() - prev_odom_loc_.y();
+      particle.loc.y() += rng_.Gaussian( delta_y, Q_(1,1)*fabs(delta_y) ); 
+
+      const float delta_a = odom_angle - prev_odom_angle_;
+      particle.angle += rng_.Gaussian( delta_a, Q_(2,2)*fabs(delta_a) ); 
+    }
+
+    prev_odom_loc_ = odom_loc;
+    prev_odom_angle_ = odom_angle;
+
+    return;
+  }
 }
 
 void ParticleFilter::Initialize(const string& map_file,
                                 const Vector2f& loc,
                                 const float angle) {
+  odom_initialized_ = false;
+
   // TODO- what do you do with the map_file name?
   for(auto& particle: particles_)
   {
@@ -190,6 +211,8 @@ void ParticleFilter::Initialize(const string& map_file,
     particle.angle = rng_.Gaussian( angle, I_(2,2) );
     particle.weight = 1/FLAGS_num_particles;
   }
+
+  return;
 }
 
 void ParticleFilter::GetLocation(Eigen::Vector2f* loc_ptr, 
