@@ -58,6 +58,10 @@ ParticleFilter::ParticleFilter() :
     odom_initialized_(false) 
 {
   particles_.resize(FLAGS_num_particles);
+
+  I_<< I_xx_, 0,     0,
+       0,     I_yy_, 0,
+       0,     0,     I_aa_;
 }
 
 void ParticleFilter::GetParticles(vector<Particle>* particles) const {
@@ -177,9 +181,9 @@ void ParticleFilter::Initialize(const string& map_file,
   // TODO- what do you do with the map_file name?
   for(auto& particle: particles_)
   {
-    particle.loc.x() = rng_.Gaussian( loc.x(), I_xx_ );
-    particle.loc.y() = rng_.Gaussian( loc.y(), I_yy_ );
-    particle.angle = rng_.Gaussian( angle, I_aa_ );
+    particle.loc.x() = rng_.Gaussian( loc.x(), I_(0,0) );
+    particle.loc.y() = rng_.Gaussian( loc.y(), I_(1,1) );
+    particle.angle = rng_.Gaussian( angle, I_(2,2) );
     particle.weight = 1/FLAGS_num_particles;
   }
 }

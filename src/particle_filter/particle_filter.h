@@ -107,6 +107,7 @@ class ParticleFilter {
   float const I_xx_ = 1.0;
   float const I_yy_ = 1.0;
   float const I_aa_ = 0.25;
+  Eigen::Matrix3f I_;
 };
 }  // namespace slam
 
