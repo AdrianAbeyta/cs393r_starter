@@ -57,7 +57,7 @@ ParticleFilter::ParticleFilter() :
     prev_odom_angle_(0),
     odom_initialized_(false) 
 {
-  particles_.resize(np_);
+  particles_.resize(FLAGS_num_particles);
 }
 
 void ParticleFilter::GetParticles(vector<Particle>* particles) const {
@@ -180,7 +180,7 @@ void ParticleFilter::Initialize(const string& map_file,
     particle.loc.x() = rng_.Gaussian( loc.x(), I_xx_ );
     particle.loc.y() = rng_.Gaussian( loc.y(), I_yy_ );
     particle.angle = rng_.Gaussian( angle, I_aa_ );
-    particle.weight = 1/np_;
+    particle.weight = 1/FLAGS_num_particles;
   }
 }
 
@@ -205,8 +205,8 @@ void ParticleFilter::GetLocation(Eigen::Vector2f* loc_ptr,
     angle += particle.angle;
   }
 
-  loc /= np_;
-  angle /= np_;
+  loc /= FLAGS_num_particles;
+  angle /= FLAGS_num_particles;
   
   return;
 }

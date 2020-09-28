@@ -103,9 +103,6 @@ class ParticleFilter {
   float prev_odom_angle_;
   bool odom_initialized_;
 
-  // Number of particles
-  int const np_ = 1000;
-
   // Initialization spread variance
   float const I_xx_ = 1.0;
   float const I_yy_ = 1.0;
