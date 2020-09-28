@@ -62,6 +62,10 @@ ParticleFilter::ParticleFilter() :
   I_<< I_xx_, 0,     0,
        0,     I_yy_, 0,
        0,     0,     I_aa_;
+
+  Q_<< Q_vxvx_, 0,       0,
+       0,       Q_vyvy_, 0,
+       0,       0,       Q_vava_;
 }
 
 void ParticleFilter::GetParticles(vector<Particle>* particles) const {

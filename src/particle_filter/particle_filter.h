@@ -103,11 +103,17 @@ class ParticleFilter {
   float prev_odom_angle_;
   bool odom_initialized_;
 
-  // Initialization spread variance
+  // Initialization spread covariance
   float const I_xx_ = 1.0;
   float const I_yy_ = 1.0;
   float const I_aa_ = 0.25;
   Eigen::Matrix3f I_;
+
+  // Process noise (prediction) variance
+  float const Q_vxvx_ = 0.25;
+  float const Q_vyvy_ = 0.25;
+  float const Q_vava_ = 0.45;
+  Eigen::Matrix3f Q_;
 };
 }  // namespace slam
 
