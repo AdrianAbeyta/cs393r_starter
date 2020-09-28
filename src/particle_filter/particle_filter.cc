@@ -55,7 +55,10 @@ config_reader::ConfigReader config_reader_({"config/particle_filter.lua"});
 ParticleFilter::ParticleFilter() :
     prev_odom_loc_(0, 0),
     prev_odom_angle_(0),
-    odom_initialized_(false) {}
+    odom_initialized_(false) 
+{
+  particles_.resize(np_);
+}
 
 void ParticleFilter::GetParticles(vector<Particle>* particles) const {
   *particles = particles_;
@@ -163,17 +166,22 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
   // You will need to use the Gaussian random number generator provided. For
   // example, to generate a random number from a Gaussian with mean 0, and
   // standard deviation 2:
-  float x = rng_.Gaussian(0.0, 2.0);
-  printf("Random number drawn from Gaussian distribution with 0 mean and "
-         "standard deviation of 2 : %f\n", x);
+  // float x = rng_.Gaussian(0.0, 2.0);
+  // printf("Random number drawn from Gaussian distribution with 0 mean and "
+  //        "standard deviation of 2 : %f\n", x);
 }
 
 void ParticleFilter::Initialize(const string& map_file,
                                 const Vector2f& loc,
                                 const float angle) {
-  // The "set_pose" button on the GUI was clicked, or an initialization message
-  // was received from the log. Initialize the particles accordingly, e.g. with
-  // some distribution around the provided location and angle.
+  // TODO- what do you do with the map_file name?
+  for(auto& particle: particles_)
+  {
+    particle.loc.x() = rng_.Gaussian( loc.x(), I_xx_ );
+    particle.loc.y() = rng_.Gaussian( loc.y(), I_yy_ );
+    particle.angle = rng_.Gaussian( angle, I_aa_ );
+    particle.weight = 1/np_;
+  }
 }
 
 void ParticleFilter::GetLocation(Eigen::Vector2f* loc_ptr, 
