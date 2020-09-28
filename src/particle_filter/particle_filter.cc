@@ -186,13 +186,29 @@ void ParticleFilter::Initialize(const string& map_file,
 
 void ParticleFilter::GetLocation(Eigen::Vector2f* loc_ptr, 
                                  float* angle_ptr) const {
+  if(!loc_ptr || !angle_ptr)
+  {
+    std::cout<<"GetLocation() was passed a nullptr! What the hell man...\n";
+    return;
+  }
+
   Vector2f& loc = *loc_ptr;
   float& angle = *angle_ptr;
-  // Compute the best estimate of the robot's location based on the current set
-  // of particles. The computed values must be set to the `loc` and `angle`
-  // variables to return them. Modify the following assignments:
+
   loc = Vector2f(0, 0);
   angle = 0;
+
+  for( const auto& particle: particles_ )
+  {
+    loc.x() += particle.loc.x();
+    loc.y() += particle.loc.y();
+    angle += particle.angle;
+  }
+
+  loc /= np_;
+  angle /= np_;
+  
+  return;
 }
 
 
