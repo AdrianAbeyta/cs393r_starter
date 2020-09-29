@@ -65,6 +65,11 @@ ParticleFilter::ParticleFilter() :
   Q_<< Q_vxvx_, 0,       0,
        0,       Q_vyvy_, 0,
        0,       0,       Q_vava_;
+
+  R_<< R_xx_, 0,     0,
+       0,     R_yy_, 0,
+       0,     0,     R_aa_;
+
 }
 
 void ParticleFilter::GetParticles(vector<Particle>* particles) const {
@@ -137,21 +142,38 @@ void ParticleFilter::Update(const vector<float>& ranges,
 }
 
 void ParticleFilter::Resample() {
-  // Resample the particles, proportional to their weights.
-  // The current particles are in the `particles_` variable. 
-  // Create a variable to store the new particles, and when done, replace the
-  // old set of particles:
-  // vector<Particle> new_particles';
-  // During resampling: 
-  //    new_particles.push_back(...)
-  // After resampling:
-  // particles_ = new_particles;
+  
+  // Create a variable to store the new particles 
+  vector <Particle> new_particle_set(FLAGS_num_particles);
 
-  // You will need to use the uniform random number generator provided. For
-  // example, to generate a random number between 0 and 1:
-  float x = rng_.UniformRandom(0, 1);
-  printf("Random number drawn from uniform distribution between 0 and 1: %f\n",
-         x);
+  // Find incremental sum of weight vector
+  vector <double> weight_sum{0.0};
+  for ( const auto& particle: particles_)
+  {
+    weight_sum.push_back(weight_sum.back() + particle.weight);
+  }
+
+  assert(weight_sum.back() == 1.0 );
+  
+  // Pick new particles from old particle set
+  for ( auto& new_particle: new_particle_set)
+  {
+    const double pick = rng_.UniformRandom(0,1);
+    for(int i=0; i< FLAGS_num_particles; i++)
+    {
+      if (pick > weight_sum[i] && pick < weight_sum[i+1])
+      {
+        new_particle = particles_[i];
+        new_particle.weight = 1.0/FLAGS_num_particles;
+        new_particle.loc.x() += rng_.Gaussian( 0, R_(0,0) ); 
+        new_particle.loc.y() += rng_.Gaussian( 0, R_(1,1) );   
+        new_particle.angle += rng_.Gaussian( 0, R_(2,2) ); 
+      }
+    }
+  }
+
+  particles_ = move( new_particle_set );
+  return;
 }
 
 void ParticleFilter::ObserveLaser(const vector<float>& ranges,
