@@ -127,6 +127,10 @@ void ParticleFilter::Update(const vector<float>& ranges,
   // observations for each particle, and assign weights to the particles based
   // on the observation likelihood computed by relating the observation to the
   // predicted point cloud.
+
+  // double likelihood(predicted_pointcloud, real_pointcloud)
+  // log likelihood reweight()
+  // normalization for cdf = 1 
 }
 
 void ParticleFilter::Resample() {
@@ -175,10 +179,7 @@ void ParticleFilter::ObserveLaser(const vector<float>& ranges,
 
 void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
                                      const float odom_angle) {
-  // A new odometry value is available (in the odom frame)
-  // Implement the motion model predict step here, to propagate the particles
-  // forward based on odometry.
-  if(!odom_initialized_)
+  if( !odom_initialized_ )
   {
     prev_odom_loc_ = odom_loc;
     prev_odom_angle_ = odom_angle;
@@ -214,7 +215,6 @@ void ParticleFilter::Initialize(const string& map_file,
 
   map_ = VectorMap("maps/"+ map_file +".txt");
 
-  // TODO- what do you do with the map_file name?
   for(auto& particle: particles_)
   {
     particle.loc.x() = rng_.Gaussian( loc.x(), I_(0,0) );
