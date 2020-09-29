@@ -202,7 +202,7 @@ void ParticleFilter::Initialize(const string& map_file,
                                 const float angle) {
   odom_initialized_ = false;
 
-  map_ = VectorMap(map_file);
+  map_ = VectorMap("maps/"+ map_file +".txt");
 
   // TODO- what do you do with the map_file name?
   for(auto& particle: particles_)
