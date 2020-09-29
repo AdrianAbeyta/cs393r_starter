@@ -208,7 +208,7 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
   }
 }
 
-void logLikelihoodReweight(const double &max_weight, vector<Particle> *particle_set )
+void ParticleFilter::logLikelihoodReweight(const double &max_weight, vector<Particle> *particle_set )
 {
     // Preventing numerical underflow  
     double weight_sum = 0;
