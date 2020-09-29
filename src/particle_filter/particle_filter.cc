@@ -84,47 +84,35 @@ void ParticleFilter::GetPredictedPointCloud(const Vector2f& loc,
                                             float angle_min,
                                             float angle_max,
                                             vector<Vector2f>* scan_ptr) {
-  vector<Vector2f>& scan = *scan_ptr;
-  // Compute what the predicted point cloud would be, if the car was at the pose
-  // loc, angle, with the sensor characteristics defined by the provided
-  // parameters.
-  // This is NOT the motion model predict step: it is the prediction of the
-  // expected observations, to be used for the update step.
+Vector2f const laser_link(0.2,0);
+vector<Vector2f>& scan = *scan_ptr;
+scan.resize(num_ranges);
 
-  // Note: The returned values must be set using the `scan` variable:
-  scan.resize(num_ranges);
-  // Fill in the entries of scan using array writes, e.g. scan[i] = ...
-  for (size_t i = 0; i < scan.size(); ++i) {
-    scan[i] = Vector2f(0, 0);
-  }
+for (size_t i = 0; i < scan.size(); ++i) { 
+    
+    float const laser_angle = angle_min + i*(angle_max - angle_min)/num_ranges;
+    float const line_x0 = loc[0] + laser_link.x()*cos(angle) + range_min*cos(angle + laser_angle);
+    float const line_y0 = loc[1] + range_min*sin(angle + laser_angle);
+    float const line_x1 = loc[0] + laser_link.x()*cos(angle) + range_max*cos(angle + laser_angle);
+    float const line_y1 = loc[1] + range_max*sin(angle + laser_angle);
+    
+    // Intersection_final is updating as line shortens
+    Vector2f intersection_final (line_x1,line_y1); 
+    Vector2f intersection_point;
 
-  // The line segments in the map are stored in the `map_.lines` variable. You
-  // can iterate through them as:
-  for (size_t i = 0; i < map_.lines.size(); ++i) {
-    const line2f map_line = map_.lines[i];
-    // The line2f class has helper functions that will be useful.
-    // You can create a new line segment instance as follows, for :
-    line2f my_line(1, 2, 3, 4); // Line segment from (1,2) to (3.4).
-    // Access the end points using `.p0` and `.p1` members:
-    printf("P0: %f, %f P1: %f,%f\n", 
-           my_line.p0.x(),
-           my_line.p0.y(),
-           my_line.p1.x(),
-           my_line.p1.y());
+    for (size_t j = 0; j < map_.lines.size(); ++j) 
+    {
+      const line2f map_line = map_.lines[j];
+      line2f my_line(line_x0, line_y0, intersection_final.x(), intersection_final.y());
+      const bool intersects = map_line.Intersection(my_line, &intersection_point);
 
-    // Check for intersections:
-    bool intersects = map_line.Intersects(my_line);
-    // You can also simultaneously check for intersection, and return the point
-    // of intersection:
-    Vector2f intersection_point; // Return variable
-    intersects = map_line.Intersection(my_line, &intersection_point);
-    if (intersects) {
-      printf("Intersects at %f,%f\n", 
-             intersection_point.x(),
-             intersection_point.y());
-    } else {
-      printf("No intersection\n");
-    }
+      if (intersects) {
+        // Replace intersection_final with closer obstacle point
+        intersection_final = intersection_point; 
+      } 
+    }  
+
+    scan[i] = intersection_final;
   }
 }
 
