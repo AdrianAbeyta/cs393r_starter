@@ -103,6 +103,8 @@ class ParticleFilter {
   float prev_odom_angle_;
   bool odom_initialized_;
 
+///HELMS DEEP ADDITIONS///
+
   // Initialization spread covariance
   float const I_xx_ = 0.05;
   float const I_yy_ = 0.05;
@@ -114,6 +116,12 @@ class ParticleFilter {
   float const Q_vyvy_ = 1.0;
   float const Q_vava_ = 1.0;
   Eigen::Matrix3f Q_;
+
+  // Resempling covariance noise
+  float const R_xx_ = 0.05;
+  float const R_yy_ = 0.05;
+  float const R_aa_ = 0.15;
+  Eigen::Matrix3f R_;
 };
 }  // namespace slam
 
