@@ -207,6 +207,25 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
   }
 }
 
+void logLikelihoodReweight(const double &max_weight, vector<Particle> *particle_set )
+{
+    // Preventing numerical underflow  
+    double weight_sum = 0;
+    for( auto& particle: *particle_set )
+    {
+        particle.weight = exp( log(particle.weight/max_weight) );
+        weight_sum += particle.weight; 
+    }
+
+    // Normalize the cdf to 1
+    for( auto& particle: *particle_set )
+    {
+        particle.weight /= weight_sum;
+    }
+
+    return;
+}
+
 void ParticleFilter::Initialize(const string& map_file,
                                 const Vector2f& loc,
                                 const float angle) {
