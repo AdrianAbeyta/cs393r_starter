@@ -122,6 +122,37 @@ void ParticleFilter::Update(const vector<float>& ranges,
                             float angle_min,
                             float angle_max,
                             Particle* p_ptr) {
+
+    //Zahin log-likelihood section//
+      //float const gamma = .96; //Modifiable parameter
+      vector<Vector2f> predicted_scan;
+      Particle &p = *p_ptr;
+      Vector2f robot_loc(p.loc);
+      float robot_angle(p.angle);
+      GetPredictedPointCloud(
+      robot_loc,
+      robot_angle,
+      ranges.size(),
+      range_min,
+      range_max,
+      angle_min,
+      angle_max,
+      &predicted_scan);
+
+
+  //----------------------------//
+  
+  
+  
+  // Implement the update step of the particle filter here.
+  // You will have to use the `GetPredictedPointCloud` to predict the expected
+  // observations for each particle, and assign weights to the particles based
+  // on the observation likelihood computed by relating the observation to the
+  // predicted point cloud.
+
+  // double likelihood(predicted_pointcloud, real_pointcloud)
+  // log likelihood reweight()
+  // normalization for cdf = 1 
   // Implement the update step of the particle filter here.
   // You will have to use the `GetPredictedPointCloud` to predict the expected
   // observations for each particle, and assign weights to the particles based
