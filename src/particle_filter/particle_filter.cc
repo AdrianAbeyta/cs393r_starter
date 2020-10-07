@@ -125,17 +125,14 @@ void ParticleFilter::Update(const vector<float>& ranges,
                             float angle_min,
                             float angle_max,
                             Particle* p_ptr) {
+  vector<Vector2f> predicted_scan;
+  Particle &p = *p_ptr;
 
-//Zahin//
-float const gamma = .96; //Modifiable parameter
-vector<Vector2f> predicted_scan;
-Particle &p = *p_ptr;
+  Vector2f robot_loc(p.loc);
+  float robot_angle(p.angle);
 
-Vector2f robot_loc(p.loc);
-float robot_angle(p.angle);
-float robot_weight(p.weight);
 
-GetPredictedPointCloud(
+  GetPredictedPointCloud(
       robot_loc,
       robot_angle,
       ranges.size(),
@@ -145,37 +142,35 @@ GetPredictedPointCloud(
       angle_max,
       &predicted_scan);
 
-vector<float> predicted_ranges;
-for (size_t i = 0; i < ranges.size(); ++i) // Populate predicted ranges for Measurement Likelihood Function
-{ 
-    
+  vector<float> predicted_ranges;
+  for (size_t i = 0; i < ranges.size(); ++i) // Populate predicted ranges for Measurement Likelihood Function
+  { 
     float const laser_angle = angle_min + i*(angle_max - angle_min)/ranges.size();
-    float const line_x0 = p.loc[0] + .2*cos(p.angle) + range_min*cos(p.angle + laser_angle);
+    float const line_x0 = p.loc[0] + .2*cos(p.angle) + range_min*cos(p.angle + laser_angle);  //TODO dont hardcore laser tf
     float const line_y0 = p.loc[1] + range_min*sin(p.angle + laser_angle);
 
     Vector2f const laser_start_point  (line_x0,line_y0);
-    predicted_ranges.push_back((predicted_scan[i] - laser_start_point).norm());
-
+    predicted_ranges.push_back( (predicted_scan[i] - laser_start_point).norm() );
+  }
 
 }
-robot_weight = MeasurementLikelihood(ranges,predicted_ranges,gamma);
-std::cout << "Robot non ln weight: " << robot_weight << std::endl;
 
-  
-}
+
 double ParticleFilter::MeasurementLikelihood(const vector<float>& ranges,const vector<float>& predicted_ranges,const float gamma)
 {
 
   double const std_laser = 1.0; // Fill in with sensor parameter
 
   float weight = 1.0;
-  for (size_t j = 0; j < ranges.size(); ++j)
+  for( size_t j = 0; j < ranges.size(); ++j )
   {
       weight *=  exp( pow( pow((ranges[j]-predicted_ranges[j])/std_laser,2)/-2 ,gamma ) );
   }
-  return weight;
 
+  return weight;
 }
+
+
 void ParticleFilter::Resample() {
   
   // Create a variable to store the new particles 
@@ -183,7 +178,7 @@ void ParticleFilter::Resample() {
 
   // Find incremental sum of weight vector
   vector <double> weight_sum{0.0};
-  for ( const auto& particle: particles_)
+  for( const auto& particle: particles_)
   {
     weight_sum.push_back(weight_sum.back() + particle.weight);
   }
@@ -191,7 +186,7 @@ void ParticleFilter::Resample() {
   assert(weight_sum.back() == 1.0 );
   
   // Pick new particles from old particle set
-  for ( auto& new_particle: new_particle_set)
+  for( auto& new_particle: new_particle_set)
   {
     const double pick = rng_.UniformRandom(0,1);
     for(int i=0; i< FLAGS_num_particles; i++)
@@ -208,6 +203,7 @@ void ParticleFilter::Resample() {
   }
 
   particles_ = move( new_particle_set );
+  
   return; 
 }
 
