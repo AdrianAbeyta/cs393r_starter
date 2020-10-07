@@ -31,6 +31,7 @@
 #include "shared/math/math_util.h"
 #include "shared/util/timer.h"
 
+
 #include "config_reader/config_reader.h"
 #include "particle_filter.h"
 
@@ -124,17 +125,57 @@ void ParticleFilter::Update(const vector<float>& ranges,
                             float angle_min,
                             float angle_max,
                             Particle* p_ptr) {
-  // Implement the update step of the particle filter here.
-  // You will have to use the `GetPredictedPointCloud` to predict the expected
-  // observations for each particle, and assign weights to the particles based
-  // on the observation likelihood computed by relating the observation to the
-  // predicted point cloud.
 
-  // double likelihood(predicted_pointcloud, real_pointcloud)
-  // log likelihood reweight()
-  // normalization for cdf = 1 
+//Zahin//
+float const gamma = .96; //Modifiable parameter
+vector<Vector2f> predicted_scan;
+Particle &p = *p_ptr;
+
+Vector2f robot_loc(p.loc);
+float robot_angle(p.angle);
+float robot_weight(p.weight);
+
+GetPredictedPointCloud(
+      robot_loc,
+      robot_angle,
+      ranges.size(),
+      range_min,
+      range_max,
+      angle_min,
+      angle_max,
+      &predicted_scan);
+
+vector<float> predicted_ranges;
+for (size_t i = 0; i < ranges.size(); ++i) // Populate predicted ranges for Measurement Likelihood Function
+{ 
+    
+    float const laser_angle = angle_min + i*(angle_max - angle_min)/ranges.size();
+    float const line_x0 = p.loc[0] + .2*cos(p.angle) + range_min*cos(p.angle + laser_angle);
+    float const line_y0 = p.loc[1] + range_min*sin(p.angle + laser_angle);
+
+    Vector2f const laser_start_point  (line_x0,line_y0);
+    predicted_ranges.push_back((predicted_scan[i] - laser_start_point).norm());
+
+
 }
+robot_weight = MeasurementLikelihood(ranges,predicted_ranges,gamma);
+std::cout << "Robot non ln weight: " << robot_weight << std::endl;
 
+  
+}
+double ParticleFilter::MeasurementLikelihood(const vector<float>& ranges,const vector<float>& predicted_ranges,const float gamma)
+{
+
+  double const std_laser = 1.0; // Fill in with sensor parameter
+
+  float weight = 1.0;
+  for (size_t j = 0; j < ranges.size(); ++j)
+  {
+      weight *=  exp( pow( pow((ranges[j]-predicted_ranges[j])/std_laser,2)/-2 ,gamma ) );
+  }
+  return weight;
+
+}
 void ParticleFilter::Resample() {
   
   // Create a variable to store the new particles 
@@ -167,7 +208,7 @@ void ParticleFilter::Resample() {
   }
 
   particles_ = move( new_particle_set );
-  return;
+  return; 
 }
 
 void ParticleFilter::ObserveLaser(const vector<float>& ranges,
@@ -208,6 +249,25 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
 
     return;
   }
+}
+
+void ParticleFilter::logLikelihoodReweight(const double &max_weight, vector<Particle> *particle_set )
+{
+    // Preventing numerical underflow  
+    double weight_sum = 0;
+    for( auto& particle: *particle_set )
+    {
+        particle.weight = exp( log(particle.weight) - log(max_weight) );
+        weight_sum += particle.weight; 
+    }
+
+    // Normalize the cdf to 1
+    for( auto& particle: *particle_set )
+    {
+        particle.weight /= weight_sum;
+    }
+
+    return;
 }
 
 void ParticleFilter::Initialize(const string& map_file,
