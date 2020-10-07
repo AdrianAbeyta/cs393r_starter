@@ -72,7 +72,7 @@ class ParticleFilter {
               float range_max,
               float angle_min,
               float angle_max,
-              Particle* p);
+              std::vector<Particle> *particle_set_ptr);
 
   // Resample particles.
   void Resample();
@@ -89,6 +89,8 @@ class ParticleFilter {
                               std::vector<Eigen::Vector2f>* scan);
 
   void logLikelihoodReweight(const double &max_weight, std::vector <Particle> *particle_set );
+
+  bool isDegenerate();
 
  private:
 
@@ -115,9 +117,9 @@ class ParticleFilter {
   Eigen::Matrix3f I_;
 
   // Process noise (prediction) variance
-  float const Q_vxvx_ = 1.0;
-  float const Q_vyvy_ = 1.0;
-  float const Q_vava_ = 1.0;
+  float const Q_vxvx_ = 0.5;
+  float const Q_vyvy_ = 0.5;
+  float const Q_vava_ = 0.5;
   Eigen::Matrix3f Q_;
 
   // Resempling covariance noise
@@ -125,6 +127,12 @@ class ParticleFilter {
   float const R_yy_ = 0.05;
   float const R_aa_ = 0.15;
   Eigen::Matrix3f R_;
+
+  // How many beams to calculate p_z_x with
+  int const num_beams_= 20;
+
+  // Correlation between laser beams
+  float const gamma_ = 1.0;
 };
 }  // namespace slam
 
