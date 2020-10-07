@@ -156,21 +156,23 @@ void ParticleFilter::Update(const vector<float>& ranges,
     predicted_ranges.push_back( (predicted_scan[i] - laser_start_point).norm() );
   }
 
+  p.weight *= MeasurementLikelihood( ranges, predicted_ranges, 0.5, 30 );
+
+  return;
 }
 
 
-double ParticleFilter::MeasurementLikelihood(const vector<float>& ranges,const vector<float>& predicted_ranges,const float gamma)
-{
+double ParticleFilter::MeasurementLikelihood( const vector<float>& ranges, const vector<float>& predicted_ranges, const float& gamma, const float& beam_count ){
 
-  double const std_laser = 1.0; // Fill in with sensor parameter
+  double p_z_x = 1.0;
 
-  float weight = 1.0;
-  for( size_t j = 0; j < ranges.size(); ++j )
+  int const step_size = ranges.size()/beam_count;
+  for(size_t i = 0; i <ranges.size(); i += step_size )
   {
-      weight *=  exp( pow( pow((ranges[j]-predicted_ranges[j])/std_laser,2)/-2 ,gamma ) );
+    p_z_x *= pow( exp(-0.5*(ranges[i] - predicted_ranges[i])*(ranges[i] - predicted_ranges[i])), gamma );
   }
 
-  return weight;
+  return p_z_x;
 }
 
 
@@ -217,6 +219,38 @@ void ParticleFilter::ObserveLaser(const vector<float>& ranges,
                                   float angle_max) {
   // A new laser scan observation is available (in the laser frame)
   // Call the Update and Resample steps as necessary.
+  float max_weight = 0.0;
+  for(auto& p : particles_)
+  {
+    Update( ranges,
+            range_min,
+            range_max,
+            angle_min,
+            angle_max,
+            &p);
+
+    if( p.weight>max_weight )
+    {
+      max_weight = p.weight;
+    }
+  }
+
+  logLikelihoodReweight( max_weight, &particles_ );
+  
+  double sum = 0;
+  for( auto& p: particles_)
+  {
+    sum += p.weight*p.weight;
+  }
+
+  double np_effective = 1.0/sum ;
+  if( np_effective < 0.5*particles_.size() )
+  {    
+    // Degenerate
+    Resample();
+  }
+  
+
 }
 
 void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,

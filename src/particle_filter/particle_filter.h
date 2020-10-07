@@ -77,7 +77,7 @@ class ParticleFilter {
   // Resample particles.
   void Resample();
   // Measurement Liklihood for weight calculation
-  double MeasurementLikelihood(const std::vector<float>& ranges, const std::vector<float>& predicted_ranges, const float gamma);
+  double MeasurementLikelihood( const std::vector<float>& ranges, const std::vector<float>& predicted_ranges, const float& gamma, const float& beam_count );
   // For debugging: get predicted point cloud from current location.
   void GetPredictedPointCloud(const Eigen::Vector2f& loc,
                               const float angle,
