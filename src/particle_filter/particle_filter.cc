@@ -124,18 +124,21 @@ void ParticleFilter::Update(const vector<float>& ranges,
                             float range_max,
                             float angle_min,
                             float angle_max,
-                            Particle* p_ptr) {
+                            vector<Particle> *particle_set_ptr) {
   
-  if( !p_ptr )
+  if( !particle_set_ptr )
   {
     std::cout<<"Update() was passed a nullptr! What the hell man...\n";
     return;
   }
 
-  Particle &p = *p_ptr;
-  vector<Vector2f> predicted_scan;
+  vector<Particle>& particle_set = *particle_set_ptr;
+  double max_weight = 0.0;
+  for(auto& p: particle_set)
+  {
+    vector<Vector2f> predicted_point_cloud;
 
-  GetPredictedPointCloud(
+    GetPredictedPointCloud(
       p.loc,
       p.angle,
       ranges.size(),
@@ -143,21 +146,28 @@ void ParticleFilter::Update(const vector<float>& ranges,
       range_max,
       angle_min,
       angle_max,
-      &predicted_scan);
+      &predicted_point_cloud);
 
-  vector<float> predicted_ranges;
-  for (size_t i = 0; i < ranges.size(); ++i) // Populate predicted ranges for Measurement Likelihood Function
-  { 
-    float const laser_angle = angle_min + i*(angle_max - angle_min)/ranges.size();
-    float const line_x0 = p.loc[0] + .2*cos(p.angle) + range_min*cos(p.angle + laser_angle);  //TODO dont hardcore laser tf
-    float const line_y0 = p.loc[1] + range_min*sin(p.angle + laser_angle);
+    
+    Vector2f const laser_position( p.loc[0] + .2, p.loc[1] ); //TODO dont hardcode laser tf
+    
+    vector<float> predicted_ranges( ranges.size() );
 
-    Vector2f const laser_start_point  (line_x0,line_y0);
-    predicted_ranges.push_back( (predicted_scan[i] - laser_start_point).norm() );
+    for( size_t i = 0; i < ranges.size(); ++i )
+    { 
+      predicted_ranges[i] = (predicted_point_cloud[i] - laser_position).norm() ;
+    }
+
+    p.weight = log( p.weight ) + log( MeasurementLikelihood(ranges, predicted_ranges, gamma_, num_beams_) );  // Now we are in log land
+
+    if( p.weight>max_weight )
+    {
+      max_weight = p.weight;
+    }
   }
 
-  p.weight *= MeasurementLikelihood( ranges, predicted_ranges, 0.5, 30 );
-
+  logLikelihoodReweight( max_weight, &particles_ ); // After this executes we are out of log land
+  
   return;
 }
 
@@ -219,34 +229,16 @@ void ParticleFilter::ObserveLaser(const vector<float>& ranges,
                                   float angle_max) {
   // A new laser scan observation is available (in the laser frame)
   // Call the Update and Resample steps as necessary.
-  float max_weight = 0.0;
-  for(auto& p : particles_)
-  {
-    Update( ranges,
-            range_min,
-            range_max,
-            angle_min,
-            angle_max,
-            &p);
-
-    if( p.weight>max_weight )
-    {
-      max_weight = p.weight;
-    }
-  }
-
-  logLikelihoodReweight( max_weight, &particles_ );
   
-  double sum = 0;
-  for( auto& p: particles_)
-  {
-    sum += p.weight*p.weight;
-  }
+  Update( ranges,
+          range_min,
+          range_max,
+          angle_min,
+          angle_max,
+          &particles_);
 
-  double np_effective = 1.0/sum ;
-  if( np_effective < 0.5*particles_.size() )
+  if( isDegenerate() )
   {    
-    // Degenerate
     Resample();
   }
   
@@ -290,8 +282,10 @@ void ParticleFilter::logLikelihoodReweight(const double &max_weight, vector<Part
     double weight_sum = 0;
     for( auto& particle: *particle_set )
     {
-        particle.weight = exp( log(particle.weight) - log(max_weight) );
-        weight_sum += particle.weight; 
+      // particle-weight = log(p(z|x)) + log(w(k-1))
+      // max_weight = log(max_weight)
+      particle.weight = exp( particle.weight - max_weight ); // weights are already in in log land
+      weight_sum += particle.weight; 
     }
 
     // Normalize the cdf to 1
@@ -348,5 +342,22 @@ void ParticleFilter::GetLocation(Eigen::Vector2f* loc_ptr,
   return;
 }
 
+bool ParticleFilter::isDegenerate()
+{
+  double sum = 0;
+  for( auto& p: particles_)
+  {
+    sum += p.weight*p.weight;
+  }
+
+  double np_effective = 1.0/sum ;
+  if( np_effective < 0.5*particles_.size() )
+  {    
+    // Degenerate
+    return true;
+  }
+
+  return false;
+}
 
 }  // namespace particle_filter
