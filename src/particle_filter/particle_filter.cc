@@ -165,7 +165,7 @@ void ParticleFilter::Resample() {
   }
 
   particles_ = move( new_particle_set );
-  return;
+  return; 
 }
 
 void ParticleFilter::ObserveLaser(const vector<float>& ranges,
@@ -214,7 +214,7 @@ void ParticleFilter::logLikelihoodReweight(const double &max_weight, vector<Part
     double weight_sum = 0;
     for( auto& particle: *particle_set )
     {
-        particle.weight = exp( log(particle.weight/max_weight) );
+        particle.weight = exp( log(particle.weight) - log(max_weight) );
         weight_sum += particle.weight; 
     }
 
