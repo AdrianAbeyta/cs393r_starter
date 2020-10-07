@@ -84,36 +84,38 @@ void ParticleFilter::GetPredictedPointCloud(const Vector2f& loc,
                                             float angle_min,
                                             float angle_max,
                                             vector<Vector2f>* scan_ptr) {
-Vector2f const laser_link(0.2,0);
-vector<Vector2f>& scan = *scan_ptr;
-scan.resize(num_ranges);
+  Vector2f const laser_link(0.2,0);
+  vector<Vector2f>& scan = *scan_ptr;
+  scan.resize(num_ranges);
 
-for (size_t i = 0; i < scan.size(); ++i) { 
-    
+  for (size_t i = 0; i < scan.size(); ++i) 
+  { 
     float const laser_angle = angle_min + i*(angle_max - angle_min)/num_ranges;
     float const line_x0 = loc[0] + laser_link.x()*cos(angle) + range_min*cos(angle + laser_angle);
     float const line_y0 = loc[1] + range_min*sin(angle + laser_angle);
     float const line_x1 = loc[0] + laser_link.x()*cos(angle) + range_max*cos(angle + laser_angle);
     float const line_y1 = loc[1] + range_max*sin(angle + laser_angle);
     
-    // Intersection_final is updating as line shortens
-    Vector2f intersection_final (line_x1,line_y1); 
+    // Intersection_final is updating as line shortens if there are intersections
+    Vector2f intersection_final( line_x1, line_y1 ); 
     Vector2f intersection_point;
 
-    for (size_t j = 0; j < map_.lines.size(); ++j) 
+    for( size_t j = 0; j < map_.lines.size(); ++j ) 
     {
       const line2f map_line = map_.lines[j];
-      line2f my_line(line_x0, line_y0, intersection_final.x(), intersection_final.y());
-      const bool intersects = map_line.Intersection(my_line, &intersection_point);
+      line2f my_line( line_x0, line_y0, intersection_final.x(), intersection_final.y() );
+      const bool intersects = map_line.Intersection( my_line, &intersection_point );
 
-      if (intersects) {
-        // Replace intersection_final with closer obstacle point
+      if( intersects ) 
+      {
+        // Replace intersection_final with closest obstacle point
         intersection_final = intersection_point; 
       } 
     }  
-
     scan[i] = intersection_final;
   }
+  
+  return;
 }
 
 void ParticleFilter::Update(const vector<float>& ranges,
