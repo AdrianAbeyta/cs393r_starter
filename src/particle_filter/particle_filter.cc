@@ -125,16 +125,19 @@ void ParticleFilter::Update(const vector<float>& ranges,
                             float angle_min,
                             float angle_max,
                             Particle* p_ptr) {
-  vector<Vector2f> predicted_scan;
+  
+  if( !p_ptr )
+  {
+    std::cout<<"Update() was passed a nullptr! What the hell man...\n";
+    return;
+  }
+
   Particle &p = *p_ptr;
-
-  Vector2f robot_loc(p.loc);
-  float robot_angle(p.angle);
-
+  vector<Vector2f> predicted_scan;
 
   GetPredictedPointCloud(
-      robot_loc,
-      robot_angle,
+      p.loc,
+      p.angle,
       ranges.size(),
       range_min,
       range_max,
@@ -203,7 +206,7 @@ void ParticleFilter::Resample() {
   }
 
   particles_ = move( new_particle_set );
-  
+
   return; 
 }
 
