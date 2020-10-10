@@ -290,21 +290,15 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
 
   else
   {
-    Vector2f const delta_odom_loc = odom_loc - prev_odom_loc_;
-    double const delta_angle = odom_angle - prev_odom_angle_;
-
+    Eigen::Rotation2D<float> base_link_rot( prev_odom_angle_ );
+    Vector2f delta_T_bl = base_link_rot*( odom_loc - prev_odom_loc_ );  // delta_T_base_link: pres 6 slide 14
+    double const delta_angle_bl = odom_angle - prev_odom_angle_;        // delta_angle_base_link: pres 6 slide 15
+  
     for(auto& particle: particles_)
     {
-      // particle.loc.x() += rng_.Gaussian( cos(odom_angle)*delta_odom_loc.norm(), Q_(0,0)*fabs(cos(odom_angle)*delta_odom_loc.norm()) ); 
-      // particle.loc.y() += rng_.Gaussian( sin(odom_angle)*delta_odom_loc.norm(), Q_(1,1)*fabs(sin(odom_angle)*delta_odom_loc.norm()) ); 
-      // particle.angle += rng_.Gaussian( delta_angle, Q_(2,2)*fabs(delta_angle) ); 
-      Vector2f delta_odom_loc_base_link;
-      delta_odom_loc_base_link.x() = cos(odom_angle)*delta_odom_loc.x()-sin(odom_angle)*delta_odom_loc.y();
-      delta_odom_loc_base_link.y() = sin(odom_angle)*delta_odom_loc.x()+cos(odom_angle)*delta_odom_loc.y();
-
-      particle.loc.x() += cos(particle.angle)*delta_odom_loc_base_link.x()-sin(particle.angle)*delta_odom_loc_base_link.y();
-      particle.loc.y() += sin(particle.angle)*delta_odom_loc_base_link.x()+cos(particle.angle)*delta_odom_loc_base_link.y();
-      particle.angle += delta_angle;
+      Eigen::Rotation2D<float> map_rot( particle.angle );
+      particle.loc += map_rot*delta_T_bl;
+      particle.angle += delta_angle_bl;
     }
     
     prev_odom_loc_ = odom_loc;
