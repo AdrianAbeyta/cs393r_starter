@@ -47,7 +47,7 @@ using Eigen::Vector2f;
 using Eigen::Vector2i;
 using vector_map::VectorMap;
 
-DEFINE_double(num_particles, 30, "Number of particles");
+DEFINE_double(num_particles, 50, "Number of particles");
 
 namespace particle_filter {
 
@@ -59,18 +59,6 @@ ParticleFilter::ParticleFilter() :
     odom_initialized_(false)
 {
   particles_.resize(FLAGS_num_particles); 
-  I_<< I_xx_, 0,     0,
-       0,     I_yy_, 0,
-       0,     0,     I_aa_;
-
-  Q_<< Q_vxvx_, 0,       0,
-       0,       Q_vyvy_, 0,
-       0,       0,       Q_vava_;
-
-  R_<< R_xx_, 0,     0,
-       0,     R_yy_, 0,
-       0,     0,     R_aa_;
-
 }
 
 void ParticleFilter::GetParticles(vector<Particle>* particles) const {
@@ -180,11 +168,11 @@ void ParticleFilter::Update(const vector<float>& ranges,
 
 double ParticleFilter::MeasurementLikelihood( const vector<float>& ranges, const vector<float>& predicted_ranges, const float& gamma, const float& beam_count ){
 
-  float const d_short = 0.5;
-  float const d_long = 1.0;
-  float const s_min = 0.5;
-  float const s_max = 10.0;
-  float const sigma_s = 0.1;
+  float const d_short = 0.25;
+  float const d_long = 0.5;
+  float const s_min = 0.1;
+  float const s_max = 15.0;
+  float const sigma_s = 1.0;
   
   int const step_size = ranges.size()/beam_count;
   double p_z_x = 1.0;
@@ -244,9 +232,6 @@ void ParticleFilter::Resample() {
       {
         new_particle = particles_[i];
         new_particle.weight = 1.0/FLAGS_num_particles;
-        new_particle.loc.x() += rng_.Gaussian( 0, R_(0,0) ); 
-        new_particle.loc.y() += rng_.Gaussian( 0, R_(1,1) );   
-        new_particle.angle += rng_.Gaussian( 0, R_(2,2) ); 
       }
     }
   }
@@ -263,23 +248,19 @@ void ParticleFilter::ObserveLaser(const vector<float>& ranges,
                                   float angle_max) {
   // A new laser scan observation is available (in the laser frame)
   // Call the Update and Resample steps as necessary.
-  
-  if( (prev_update_loc_ - prev_odom_loc_).norm() > min_update_dist_) 
-  {
-    prev_update_loc_ = prev_odom_loc_;
-    std::cout << "Updating\n";
-    Update( ranges,
-            range_min,
-            range_max,
-            angle_min,
-            angle_max,
-            &particles_);
 
-    if( isDegenerate() )
-    {    
-      Resample();
-    }
+  Update( ranges,
+          range_min,
+          range_max,
+          angle_min,
+          angle_max,
+          &particles_);
+
+  if( isDegenerate() )
+  {    
+    Resample();
   }
+ 
 }
 
 void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
@@ -304,6 +285,11 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
       Eigen::Rotation2D<float> map_rot( particle.angle );
       particle.loc += map_rot*delta_T_bl;
       particle.angle += delta_angle_bl;
+
+      // Add noise
+      particle.loc.x() += rng_.Gaussian( 0, Q_tt_*delta_T_bl.norm() + Q_at_*fabs(delta_angle_bl) ); 
+      particle.loc.y() += rng_.Gaussian( 0, Q_tt_*delta_T_bl.norm() + Q_at_*fabs(delta_angle_bl) ); 
+      particle.angle += rng_.Gaussian( 0, Q_aa_*fabs(delta_angle_bl) + Q_at_*delta_T_bl.norm() ); 
     }
     
     prev_odom_loc_ = odom_loc;
@@ -343,9 +329,9 @@ void ParticleFilter::Initialize(const string& map_file,
   
   for(auto& particle: particles_)
   {
-    particle.loc.x() = rng_.Gaussian( loc.x(), I_(0,0) );
-    particle.loc.y() = rng_.Gaussian( loc.y(), I_(1,1) );
-    particle.angle = rng_.Gaussian( angle, I_(2,2) );
+    particle.loc.x() = rng_.Gaussian( loc.x(), I_xx_ );
+    particle.loc.y() = rng_.Gaussian( loc.y(), I_yy_ );
+    particle.angle = rng_.Gaussian( angle, I_aa_ );
     particle.weight = 1/FLAGS_num_particles;
   }
 
@@ -390,7 +376,7 @@ bool ParticleFilter::isDegenerate()
   double np_effective = 1.0/sum ;
   std::cout << np_effective << std::endl;
 
-  if( np_effective < 0.5*particles_.size() )
+  if( np_effective < 0.75*particles_.size() )
   {    
     // Degenerate
     return true;
