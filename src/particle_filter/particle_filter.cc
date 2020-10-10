@@ -211,7 +211,7 @@ double ParticleFilter::MeasurementLikelihood( const Particle& p,
   double p_z_x = 1.0;
   double p_z_x_i;
   
-  for(size_t i = 0; i <ranges.size(); i += step_size )
+  for( size_t i = 0; i <ranges.size(); i += step_size )
   {
     const double predicted_range = ( GetPredictedPoint( p.loc,
                                                  p.angle,
@@ -221,26 +221,26 @@ double ParticleFilter::MeasurementLikelihood( const Particle& p,
                                                  angle_min,
                                                  angle_max,
                                                  i ) 
-                                     - laser_position).norm() ;
+                                     - laser_position ).norm() ;
     if( ranges[i] < s_min ||
         ranges[i] > s_max )
     {
       p_z_x_i = 1.0;
     }
 
-    else if(ranges[i]<predicted_range - d_short)
+    else if( ranges[i]<predicted_range - d_short )
     {
-      p_z_x_i = exp(-0.5*d_short*d_short/(sigma_s*sigma_s));
+      p_z_x_i = exp( -0.5*d_short*d_short/(sigma_s*sigma_s) );
     }
 
-    else if(ranges[i]>predicted_range + d_short)
+    else if( ranges[i]>predicted_range + d_short )
     {
-      p_z_x_i = exp(-0.5*d_long*d_long/(sigma_s*sigma_s));
+      p_z_x_i = exp( -0.5*d_long*d_long/(sigma_s*sigma_s) );
     }
 
     else
     {
-      p_z_x_i = exp(-0.5*(ranges[i] - predicted_range)*(ranges[i] - predicted_range)/(sigma_s*sigma_s));
+      p_z_x_i = exp( -0.5*(ranges[i] - predicted_range)*(ranges[i] - predicted_range)/(sigma_s*sigma_s) );
     }
 
     p_z_x *= p_z_x_i;
@@ -268,9 +268,9 @@ void ParticleFilter::Resample() {
   for( auto& new_particle: new_particle_set)
   {
     const double pick = rng_.UniformRandom(0,1);
-    for(int i=0; i< FLAGS_num_particles; i++)
+    for( int i=0; i< FLAGS_num_particles; ++i )
     {
-      if (pick > weight_sum[i] && pick < weight_sum[i+1])
+      if( pick > weight_sum[i] && pick < weight_sum[i+1] )
       {
         new_particle = particles_[i];
         new_particle.weight = 1.0/FLAGS_num_particles;
