@@ -114,19 +114,11 @@ class ParticleFilter {
   float const I_xx_ = 0.15;
   float const I_yy_ = 0.15;
   float const I_aa_ = 0.15;
-  Eigen::Matrix3f I_;
 
   // Process noise (prediction) variance
-  float const Q_vxvx_ = 0.15;
-  float const Q_vyvy_ = 0.15;
-  float const Q_vava_ = 0.15;
-  Eigen::Matrix3f Q_;
-
-  // Resempling covariance noise
-  float const R_xx_ = 0.15;
-  float const R_yy_ = 0.15;
-  float const R_aa_ = 0.15;
-  Eigen::Matrix3f R_;
+  float const Q_tt_ = 0.5;   // tt - translation*translation - we dont distinguish between xx and yy
+  float const Q_aa_ = 0.15;
+  float const Q_at_ = 0.75;     // at - rotation*translation - we dont distinguish between ay, ya, xa, ax
 
   // How many beams to calculate p_z_x with
   int const num_beams_= 15;
