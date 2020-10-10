@@ -47,7 +47,7 @@ using Eigen::Vector2f;
 using Eigen::Vector2i;
 using vector_map::VectorMap;
 
-DEFINE_double(num_particles, 50, "Number of particles");
+DEFINE_double(num_particles, 30, "Number of particles");
 
 namespace particle_filter {
 
@@ -174,12 +174,40 @@ void ParticleFilter::Update(const vector<float>& ranges,
 
 double ParticleFilter::MeasurementLikelihood( const vector<float>& ranges, const vector<float>& predicted_ranges, const float& gamma, const float& beam_count ){
 
-  double p_z_x = 1.0;
-
+  float const d_short = 0.5;
+  float const d_long = 1.0;
+  float const s_min = 0.5;
+  float const s_max = 10.0;
+  float const sigma_s = 0.1;
+  
   int const step_size = ranges.size()/beam_count;
+  double p_z_x = 1.0;
+  double p_z_x_i;
+  
   for(size_t i = 0; i <ranges.size(); i += step_size )
   {
-    p_z_x *= pow( exp(-0.5*(ranges[i] - predicted_ranges[i])*(ranges[i] - predicted_ranges[i])), gamma );
+    if( ranges[i] < s_min ||
+        ranges[i] > s_max )
+    {
+      p_z_x_i = 1.0;
+    }
+
+    else if(ranges[i]<predicted_ranges[i] - d_short)
+    {
+      p_z_x_i = exp(-0.5*d_short*d_short/(sigma_s*sigma_s));
+    }
+
+    else if(ranges[i]>predicted_ranges[i] + d_short)
+    {
+      p_z_x_i = exp(-0.5*d_long*d_long/(sigma_s*sigma_s));
+    }
+
+    else
+    {
+      p_z_x_i = exp(-0.5*(ranges[i] - predicted_ranges[i])*(ranges[i] - predicted_ranges[i])/(sigma_s*sigma_s));
+    }
+
+    p_z_x *= p_z_x_i;
   }
 
   return p_z_x;
@@ -230,19 +258,23 @@ void ParticleFilter::ObserveLaser(const vector<float>& ranges,
   // A new laser scan observation is available (in the laser frame)
   // Call the Update and Resample steps as necessary.
   
-  Update( ranges,
-          range_min,
-          range_max,
-          angle_min,
-          angle_max,
-          &particles_);
+  // if( (prev_update_loc_ - prev_odom_loc_).norm() > min_update_dist_) 
+  // {
+  //   prev_update_loc_ = prev_odom_loc_;
+  //   std::cout << "Updating\n";
+  //   Update( ranges,
+  //           range_min,
+  //           range_max,
+  //           angle_min,
+  //           angle_max,
+  //           &particles_);
 
-  if( isDegenerate() )
-  {    
-    Resample();
-  }
-  
-
+  //   if( isDegenerate() )
+  //   {    
+  //     std::cout << "Resampling\n";
+  //     Resample();
+  //   }
+  // }
 }
 
 void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
@@ -258,17 +290,23 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
 
   else
   {
-    const float delta_x = odom_loc.x() - prev_odom_loc_.x();
-    const float delta_y = odom_loc.y() - prev_odom_loc_.y();
-    const float delta_a = odom_angle - prev_odom_angle_;
+    Vector2f const delta_odom_loc = odom_loc - prev_odom_loc_;
+    double const delta_angle = odom_angle - prev_odom_angle_;
 
     for(auto& particle: particles_)
     {
-      particle.loc.x() += rng_.Gaussian( delta_x, Q_(0,0)*fabs(delta_x) ); 
-      particle.loc.y() += rng_.Gaussian( delta_y, Q_(1,1)*fabs(delta_y) ); 
-      particle.angle += rng_.Gaussian( delta_a, Q_(2,2)*fabs(delta_a) ); 
-    }
+      // particle.loc.x() += rng_.Gaussian( cos(odom_angle)*delta_odom_loc.norm(), Q_(0,0)*fabs(cos(odom_angle)*delta_odom_loc.norm()) ); 
+      // particle.loc.y() += rng_.Gaussian( sin(odom_angle)*delta_odom_loc.norm(), Q_(1,1)*fabs(sin(odom_angle)*delta_odom_loc.norm()) ); 
+      // particle.angle += rng_.Gaussian( delta_angle, Q_(2,2)*fabs(delta_angle) ); 
+      Vector2f delta_odom_loc_base_link;
+      delta_odom_loc_base_link.x() = cos(odom_angle)*delta_odom_loc.x()-sin(odom_angle)*delta_odom_loc.y();
+      delta_odom_loc_base_link.y() = sin(odom_angle)*delta_odom_loc.x()+cos(odom_angle)*delta_odom_loc.y();
 
+      particle.loc.x() += cos(particle.angle)*delta_odom_loc_base_link.x()-sin(particle.angle)*delta_odom_loc_base_link.y();
+      particle.loc.y() += sin(particle.angle)*delta_odom_loc_base_link.x()+cos(particle.angle)*delta_odom_loc_base_link.y();
+      particle.angle += delta_angle;
+    }
+    
     prev_odom_loc_ = odom_loc;
     prev_odom_angle_ = odom_angle;
 
@@ -303,7 +341,7 @@ void ParticleFilter::Initialize(const string& map_file,
   odom_initialized_ = false;
 
   map_ = VectorMap("maps/"+ map_file +".txt");
-
+  
   for(auto& particle: particles_)
   {
     particle.loc.x() = rng_.Gaussian( loc.x(), I_(0,0) );

@@ -111,28 +111,35 @@ class ParticleFilter {
 ///HELMS DEEP ADDITIONS///
 
   // Initialization spread covariance
-  float const I_xx_ = 0.05;
-  float const I_yy_ = 0.05;
+  float const I_xx_ = 0.15;
+  float const I_yy_ = 0.15;
   float const I_aa_ = 0.15;
   Eigen::Matrix3f I_;
 
   // Process noise (prediction) variance
-  float const Q_vxvx_ = 0.5;
-  float const Q_vyvy_ = 0.5;
-  float const Q_vava_ = 0.5;
+  float const Q_vxvx_ = 0.15;
+  float const Q_vyvy_ = 0.15;
+  float const Q_vava_ = 0.15;
   Eigen::Matrix3f Q_;
 
   // Resempling covariance noise
-  float const R_xx_ = 0.05;
-  float const R_yy_ = 0.05;
+  float const R_xx_ = 0.15;
+  float const R_yy_ = 0.15;
   float const R_aa_ = 0.15;
   Eigen::Matrix3f R_;
 
   // How many beams to calculate p_z_x with
-  int const num_beams_= 20;
+  int const num_beams_= 15;
 
   // Correlation between laser beams
   float const gamma_ = 1.0;
+  
+  // Distance after which we update particles with laser
+  float const min_update_dist_=  0.1;
+
+  // Location where we last did laser update
+  Eigen::Vector2f  prev_update_loc_;
+  
 };
 }  // namespace slam
 
