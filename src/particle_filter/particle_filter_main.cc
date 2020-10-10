@@ -154,7 +154,7 @@ void PublishTrajectory() {
 
 void PublishVisualization() {
   static double t_last = 0;
-  if (GetMonotonicTime() - t_last < 0.05) {
+  if (GetMonotonicTime() - t_last < 0.1) {
     // Rate-limit visualization.
     return;
   }
@@ -163,7 +163,7 @@ void PublishVisualization() {
   ClearVisualizationMsg(vis_msg_);
 
   PublishParticles();
-  PublishPredictedScan();
+  // PublishPredictedScan();
   PublishTrajectory();
   visualization_publisher_.publish(vis_msg_);
 }
