@@ -85,11 +85,17 @@ void ParticleFilter::GetPredictedPointCloud(const Vector2f& loc,
                                             float angle_min,
                                             float angle_max,
                                             vector<Vector2f>* scan_ptr) {
-  Vector2f const laser_link(0.2,0);
+  if( !scan_ptr )
+  {
+    std::cout<<"Update() was passed a nullptr! What the hell man...\n";
+    return;
+  }
+  Vector2f const laser_link( 0.2,0 );
   vector<Vector2f>& scan = *scan_ptr;
   scan.resize(num_ranges);
 
-  for (size_t i = 0; i < scan.size(); ++i) 
+  int const step_size = scan.size()/num_beams_;
+  for( size_t i = 0; i <scan.size(); i += step_size ) 
   { 
     float const laser_angle = angle_min + i*(angle_max - angle_min)/num_ranges;
     float const line_x0 = loc[0] + laser_link.x()*cos(angle) + range_min*cos(angle + laser_angle);
@@ -258,23 +264,22 @@ void ParticleFilter::ObserveLaser(const vector<float>& ranges,
   // A new laser scan observation is available (in the laser frame)
   // Call the Update and Resample steps as necessary.
   
-  // if( (prev_update_loc_ - prev_odom_loc_).norm() > min_update_dist_) 
-  // {
-  //   prev_update_loc_ = prev_odom_loc_;
-  //   std::cout << "Updating\n";
-  //   Update( ranges,
-  //           range_min,
-  //           range_max,
-  //           angle_min,
-  //           angle_max,
-  //           &particles_);
+  if( (prev_update_loc_ - prev_odom_loc_).norm() > min_update_dist_) 
+  {
+    prev_update_loc_ = prev_odom_loc_;
+    std::cout << "Updating\n";
+    Update( ranges,
+            range_min,
+            range_max,
+            angle_min,
+            angle_max,
+            &particles_);
 
-  //   if( isDegenerate() )
-  //   {    
-  //     std::cout << "Resampling\n";
-  //     Resample();
-  //   }
-  // }
+    if( isDegenerate() )
+    {    
+      Resample();
+    }
+  }
 }
 
 void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
@@ -290,7 +295,7 @@ void ParticleFilter::ObserveOdometry(const Vector2f& odom_loc,
 
   else
   {
-    Eigen::Rotation2D<float> base_link_rot( prev_odom_angle_ );
+    Eigen::Rotation2D<float> base_link_rot( -prev_odom_angle_ );        // THIS HAS TO BE NEGATIVE :)
     Vector2f delta_T_bl = base_link_rot*( odom_loc - prev_odom_loc_ );  // delta_T_base_link: pres 6 slide 14
     double const delta_angle_bl = odom_angle - prev_odom_angle_;        // delta_angle_base_link: pres 6 slide 15
   
@@ -383,6 +388,8 @@ bool ParticleFilter::isDegenerate()
   }
 
   double np_effective = 1.0/sum ;
+  std::cout << np_effective << std::endl;
+
   if( np_effective < 0.5*particles_.size() )
   {    
     // Degenerate
