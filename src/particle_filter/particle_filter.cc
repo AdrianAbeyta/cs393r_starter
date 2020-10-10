@@ -65,6 +65,43 @@ void ParticleFilter::GetParticles(vector<Particle>* particles) const {
   *particles = particles_;
 }
 
+Vector2f ParticleFilter::GetPredictedPoint( const Vector2f& loc,
+                                            const float angle,
+                                            const int num_ranges,
+                                            const float range_min,
+                                            const float range_max,
+                                            const float angle_min,
+                                            const float angle_max,
+                                            const int beam_index) 
+{
+  Vector2f const laser_link( 0.2, 0 );
+
+  float const laser_angle = angle_min + beam_index*(angle_max - angle_min)/num_ranges;
+  float const line_x0 = loc[0] + laser_link.x()*cos(angle) + range_min*cos(angle + laser_angle);
+  float const line_y0 = loc[1] + range_min*sin(angle + laser_angle);
+  float const line_x1 = loc[0] + laser_link.x()*cos(angle) + range_max*cos(angle + laser_angle);
+  float const line_y1 = loc[1] + range_max*sin(angle + laser_angle);
+    
+  // Intersection_final is updating as line shortens if there are intersections
+  Vector2f intersection_final( line_x1, line_y1 ); 
+  Vector2f intersection_point;
+
+  for( size_t j = 0; j < map_.lines.size(); ++j ) 
+  {
+    const line2f map_line = map_.lines[j];
+    line2f my_line( line_x0, line_y0, intersection_final.x(), intersection_final.y() );
+    const bool intersects = map_line.Intersection( my_line, &intersection_point );
+
+    if( intersects ) 
+    {
+      // Replace intersection_final with closest obstacle point
+      intersection_final = intersection_point; 
+    } 
+  }  
+
+  return intersection_final;
+}
+
 void ParticleFilter::GetPredictedPointCloud(const Vector2f& loc,
                                             const float angle,
                                             int num_ranges,
@@ -129,30 +166,16 @@ void ParticleFilter::Update(const vector<float>& ranges,
   vector<Particle>& particle_set = *particle_set_ptr;
   double max_weight = 0.0;
   for(auto& p: particle_set)
-  {
-    vector<Vector2f> predicted_point_cloud;
-
-    GetPredictedPointCloud(
-      p.loc,
-      p.angle,
-      ranges.size(),
-      range_min,
-      range_max,
-      angle_min,
-      angle_max,
-      &predicted_point_cloud);
-
-    
-    Vector2f const laser_position( p.loc[0] + .2, p.loc[1] ); //TODO dont hardcode laser tf
-    
-    vector<float> predicted_ranges( ranges.size() );
-
-    for( size_t i = 0; i < ranges.size(); ++i )
-    { 
-      predicted_ranges[i] = (predicted_point_cloud[i] - laser_position).norm() ;
-    }
-
-    p.weight = log( p.weight ) + log( MeasurementLikelihood(ranges, predicted_ranges, gamma_, num_beams_) );  // Now we are in log land
+  {    
+    // Now we are in log land after this 
+    p.weight = log( p.weight ) + log( MeasurementLikelihood( p, 
+                                                             ranges,
+                                                             gamma_, 
+                                                             num_beams_, 
+                                                             range_min,
+                                                             range_max,
+                                                             angle_min,
+                                                             angle_max) );  
 
     if( p.weight>max_weight )
     {
@@ -160,19 +183,29 @@ void ParticleFilter::Update(const vector<float>& ranges,
     }
   }
 
-  logLikelihoodReweight( max_weight, &particles_ ); // After this executes we are out of log land
+  // After this executes we are out of log land
+  logLikelihoodReweight( max_weight, &particles_ ); 
   
   return;
 }
 
 
-double ParticleFilter::MeasurementLikelihood( const vector<float>& ranges, const vector<float>& predicted_ranges, const float& gamma, const float& beam_count ){
+double ParticleFilter::MeasurementLikelihood( const Particle& p, 
+                                              const std::vector<float>& ranges, 
+                                              const float& gamma, 
+                                              const float& beam_count, 
+                                              const float& range_min,
+                                              const float& range_max,
+                                              const float& angle_min,
+                                              const float& angle_max )
+{
+  Vector2f const laser_position( p.loc[0] + .2, p.loc[1] );
 
-  float const d_short = 0.25;
-  float const d_long = 0.5;
+  float const d_short = 0.5;
+  float const d_long = 1.0;
   float const s_min = 0.1;
   float const s_max = 15.0;
-  float const sigma_s = 1.0;
+  float const sigma_s = 0.75;
   
   int const step_size = ranges.size()/beam_count;
   double p_z_x = 1.0;
@@ -180,25 +213,34 @@ double ParticleFilter::MeasurementLikelihood( const vector<float>& ranges, const
   
   for(size_t i = 0; i <ranges.size(); i += step_size )
   {
+    const double predicted_range = ( GetPredictedPoint( p.loc,
+                                                 p.angle,
+                                                 ranges.size(),
+                                                 range_min,
+                                                 range_max,
+                                                 angle_min,
+                                                 angle_max,
+                                                 i ) 
+                                     - laser_position).norm() ;
     if( ranges[i] < s_min ||
         ranges[i] > s_max )
     {
       p_z_x_i = 1.0;
     }
 
-    else if(ranges[i]<predicted_ranges[i] - d_short)
+    else if(ranges[i]<predicted_range - d_short)
     {
       p_z_x_i = exp(-0.5*d_short*d_short/(sigma_s*sigma_s));
     }
 
-    else if(ranges[i]>predicted_ranges[i] + d_short)
+    else if(ranges[i]>predicted_range + d_short)
     {
       p_z_x_i = exp(-0.5*d_long*d_long/(sigma_s*sigma_s));
     }
 
     else
     {
-      p_z_x_i = exp(-0.5*(ranges[i] - predicted_ranges[i])*(ranges[i] - predicted_ranges[i])/(sigma_s*sigma_s));
+      p_z_x_i = exp(-0.5*(ranges[i] - predicted_range)*(ranges[i] - predicted_range)/(sigma_s*sigma_s));
     }
 
     p_z_x *= p_z_x_i;
@@ -376,7 +418,7 @@ bool ParticleFilter::isDegenerate()
   double np_effective = 1.0/sum ;
   std::cout << np_effective << std::endl;
 
-  if( np_effective < 0.75*particles_.size() )
+  if( np_effective < 0.5*particles_.size() )
   {    
     // Degenerate
     return true;
