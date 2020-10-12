@@ -142,12 +142,6 @@ class ParticleFilter {
   // Correlation between laser beams
   float const gamma_ = 1.0;
   
-  // Distance after which we update particles with laser
-  float const min_update_dist_=  0.1;
-
-  // Location where we last did laser update
-  Eigen::Vector2f  prev_update_loc_;
-  
 };
 }  // namespace slam
 
