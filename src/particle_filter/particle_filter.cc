@@ -416,7 +416,7 @@ bool ParticleFilter::isDegenerate()
   }
 
   double np_effective = 1.0/sum ;
-  std::cout << np_effective << std::endl;
+  //std::cout << np_effective << std::endl;
 
   if( np_effective < 0.5*particles_.size() )
   {    
