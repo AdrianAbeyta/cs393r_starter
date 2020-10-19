@@ -55,7 +55,8 @@ namespace slam {
 SLAM::SLAM() 
   : prev_odom_loc_( 0, 0 ),
     prev_odom_angle_( 0 ),
-    odom_initialized_( false ) 
+    odom_initialized_( false ),
+    map_initialized_( false ) 
   {}
 
 
@@ -85,6 +86,20 @@ void SLAM::GetCloud ( vector<Vector2f>* point_cloud ) const
   return;
 }
 
+void SLAM::GetRaster( float* resolution, MatrixXf* raster )
+{
+  if( !resolution || !raster )
+  {
+    std::cout<<" SLAM::GetRaster() was passed a nullptr! What the hell man...\n";
+    return;
+  }
+
+  *resolution = resolution_;
+  *raster = raster_;
+                
+  return;
+}
+
 
 void SLAM::ObserveLaser( const vector<float>& ranges,
                          float range_min,
@@ -106,23 +121,29 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
 
     map_pose_scan_.push_back( origin );
 
-    // GenerateRaster( origin.point_cloud,
-    //                 resolution_,
-    //                 sigma_s_,
-    //                 &raster_);
+    GenerateRaster( origin.point_cloud,
+                    resolution_,
+                    sigma_s_,
+                    &raster_);
 
     map_initialized_ = true;
     return;
   }
 
-  if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
-      fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
+  // if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
+  //     fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
+  if( true )
   {
     PoseScan node{ state_loc_, 
                    state_angle_, 
                    ScanToPointCloud( ranges, angle_min, angle_max ) };
 
     map_pose_scan_.push_back( node );
+
+    GenerateRaster( node.point_cloud,
+                    resolution_,
+                    sigma_s_,
+                    &raster_);
 
     return;
   }
@@ -181,20 +202,27 @@ void GenerateRaster( const vector<Vector2f>& pcl,
   MatrixXf& raster = *raster_ptr;
 
   
-  for(int j=-raster.cols()/2.0; j<raster.cols()/2; ++j) 
+  for(int j=1-raster.cols()/2.0; j<raster.cols()/2; ++j) 
   {
-    for(int i=-raster.rows()/2; i<raster.rows()/2; ++i)
+    for(int i=1-raster.rows()/2; i<raster.rows()/2; ++i)
     {
-      auto likelihood = [ i, j, resolution, sensor_noise ]
-                         ( double a, Vector2f b )
-                         { Vector2f temp(i*resolution, j*resolution);
-                           float err = (b-temp).norm();
-                           return a - 0.5*(err*err)/(sensor_noise*sensor_noise); };
+      // auto likelihood = [ i, j, resolution, sensor_noise ]
+      //                    ( double a, Vector2f b )
+      //                    { Vector2f temp(i*resolution, j*resolution);
+      //                      float err = (b-temp).norm();
+      //                      return a - 0.5*(err*err)/(sensor_noise*sensor_noise); };
+      //
+      // raster(i+raster.rows()/2,j+raster.cols()/2.0) = std::accumulate(pcl.begin(), pcl.end(), 0.0, likelihood);
 
-      raster(i+raster.rows()/2,j+raster.cols()/2.0) = std::accumulate(pcl.begin(), pcl.end(), 0.0, likelihood);
+      raster(i+raster.rows()/2,j+raster.cols()/2.0) = 0;
+      for(const auto& p: pcl)
+      { 
+        Vector2f temp( i*resolution, j*resolution );
+        raster(i+raster.rows()/2,j+raster.cols()/2.0) += exp( -(temp-p).norm()*(temp-p).norm() );
+      }
+      
     }
   }
-
 
   return;
 }
