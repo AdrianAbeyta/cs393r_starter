@@ -33,8 +33,8 @@ namespace slam {
 struct PoseScan
 {
   // map frame pose
-  Eigen::Vector2f const state_loc;
-  float const state_angle;
+  Eigen::Vector2f state_loc;
+  float state_angle;
 
   // base_link referenced point cloud 
   // TODO- why shouldn't this be in the map frame?

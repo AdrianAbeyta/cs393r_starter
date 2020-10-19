@@ -82,10 +82,11 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   if( !map_initialized_ )
   {
     map_pose_scan_.clear();
-    
+
+    // Note that the first cloud does not need to be transformed to world frame becasue it is the world frame!
     PoseScan origin{ state_loc_, 
                      state_angle_, 
-                     ScanToPointCloud( ranges, angle_min, angle_max ) }; //Have use initializer list because PoseScan uses const
+                     ScanToPointCloud( ranges, angle_min, angle_max ) };
 
     map_pose_scan_.push_back( origin );
 
@@ -96,9 +97,10 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
       fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
   {
-     PoseScan node{ state_loc_, 
-                    state_angle_, 
-                    ScanToPointCloud( ranges, angle_min, angle_max ) }; //Have use initializer list because PoseScan uses const
+    PoseScan node;
+    node.state_loc = state_loc_; 
+    node.state_angle = state_angle_;
+    node.point_cloud = ScanToPointCloud( ranges, angle_min, angle_max ) ; 
 
     map_pose_scan_.push_back( node );
 
