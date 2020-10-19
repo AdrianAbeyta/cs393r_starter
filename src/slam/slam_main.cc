@@ -116,6 +116,26 @@ void PublishPose() {
   localization_publisher_.publish(localization_msg);
 }
 
+void PublishCloud() {
+  static double t_last = 0;
+  if (GetMonotonicTime() - t_last < 0.5) {
+    // Rate-limit visualization.
+    return;
+  }
+  t_last = GetMonotonicTime();
+  vis_msg_.header.stamp = ros::Time::now();
+  ClearVisualizationMsg(vis_msg_);
+
+  vector<Vector2f> point_cloud;
+  slam_.GetCloud( &point_cloud );
+
+  for(auto const& p: point_cloud)
+  {
+    visualization::DrawCross(p, 0.05, 0xC0C0C0, vis_msg_);
+  }
+  visualization_publisher_.publish(vis_msg_);
+}
+
 void LaserCallback(const sensor_msgs::LaserScan& msg) {
   if (FLAGS_v > 0) {
     printf("Laser t=%f\n", msg.header.stamp.toSec());
@@ -129,6 +149,7 @@ void LaserCallback(const sensor_msgs::LaserScan& msg) {
       msg.angle_max);
   PublishMap();
   PublishPose();
+  PublishCloud();
 }
 
 void OdometryCallback(const nav_msgs::Odometry& msg) {
