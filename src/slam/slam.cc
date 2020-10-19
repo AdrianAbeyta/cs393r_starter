@@ -58,11 +58,12 @@ SLAM::SLAM()
 
 void SLAM::GetPose( Eigen::Vector2f* loc, float* angle ) const 
 {
-  if(!loc || !angle)
+  if( !loc || !angle )
   {
     std::cout<<" SLAM::GetPose() was passed a nullptr! What the hell man...\n";
     return;
   }
+
   // Return the latest pose estimate of the robot.
   *loc = state_loc_;
   *angle = state_angle_;
@@ -78,6 +79,28 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   // A new laser scan has been observed. Decide whether to add it as a pose
   // for SLAM. If decided to add, align it to the scan from the last saved pose,
   // and save both the scan and the optimized pose.
+  if( !map_initialized_ )
+  {
+    PoseScan origin{ state_loc_, 
+                     state_angle_, 
+                     ScanToPointCloud( ranges, angle_min, angle_max ) }; //Have use initializer list because PoseScan uses const
+
+    map_pose_scan_.push_back( origin );
+
+    map_initialized_ = true;
+    return;
+  }
+
+  if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
+      fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
+  {
+     PoseScan node{ state_loc_, 
+                    state_angle_, 
+                    ScanToPointCloud( ranges, angle_min, angle_max ) }; //Have use initializer list because PoseScan uses const
+
+    map_pose_scan_.push_back( node );
+    std::cout << "We need to add this laser scan!\n";
+  }
 }
 
 
@@ -115,6 +138,35 @@ vector<Vector2f> SLAM::GetMap()
   // Reconstruct the map as a single aligned point cloud from all saved poses
   // and their respective scans.
   return map;
+}
+
+
+vector<Vector2f> ScanToPointCloud( const vector<float>& ranges,
+                                   const float angle_min,
+                                   const float angle_max )
+{
+  // Adopted from Adrian Abeyta's work in "navigation.cc"
+
+  Vector2f const kLaserLoc( 0.2, 0 );
+
+  vector<Vector2f> point_cloud;
+  point_cloud.reserve( ranges.size() );
+
+  float const angle_increment = ( angle_max - angle_min )/ranges.size();
+
+  for( size_t i=0; i<ranges.size(); ++i )
+  {
+    double const theta = angle_min + angle_increment*i; 
+    
+    // Rotation
+    Vector2f point( cos(theta)*ranges[i], sin(theta)*ranges[i] ); 
+    // Translation
+    point += kLaserLoc; 
+
+    point_cloud.push_back( point );
+  }
+  
+  return point_cloud;
 }
 
 }  // namespace slam
