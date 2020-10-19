@@ -83,6 +83,23 @@ class SLAM {
     // Minumum rotation before new scan will be registered
     float const min_rot_ = M_PI/6;
 
+    // Raster dimensions
+    float const raster_height_ = 10.0; // m
+    float const raster_width_ = 10.0;  // m
+    
+    // High resolution raster
+    float const high_resolution_ = 0.05; // m
+    int const high_res_rows =  raster_height_/high_resolution_;
+    int const high_res_cols = raster_width_/high_resolution_;
+    Eigen::MatrixXf high_res_raster_{ high_res_rows, high_res_cols };
+
+    // Low resolution raster
+    float const low_resolution_ = 0.3; // m
+    int const low_res_rows =  raster_height_/low_resolution_;
+    int const low_res_cols = raster_width_/low_resolution_;
+    Eigen::MatrixXf low_res_raster_{ low_res_rows, low_res_cols };
+
+
 };
 
 std::vector<Eigen::Vector2f> ScanToPointCloud( const std::vector<float>& ranges,
