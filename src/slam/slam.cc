@@ -49,39 +49,46 @@ using vector_map::VectorMap;
 
 namespace slam {
 
-SLAM::SLAM() :
-    prev_odom_loc_(0, 0),
-    prev_odom_angle_(0),
-    odom_initialized_(false) {}
+SLAM::SLAM() 
+  : prev_odom_loc_( 0, 0 ),
+    prev_odom_angle_( 0 ),
+    odom_initialized_( false ) 
+  {}
 
-void SLAM::GetPose(Eigen::Vector2f* loc, float* angle) const {
+void SLAM::GetPose( Eigen::Vector2f* loc, float* angle ) const 
+{
   // Return the latest pose estimate of the robot.
-  *loc = Vector2f(0, 0);
+  *loc = Vector2f( 0, 0 );
   *angle = 0;
 }
 
-void SLAM::ObserveLaser(const vector<float>& ranges,
-                        float range_min,
-                        float range_max,
-                        float angle_min,
-                        float angle_max) {
+void SLAM::ObserveLaser( const vector<float>& ranges,
+                         float range_min,
+                         float range_max,
+                         float angle_min,
+                         float angle_max ) 
+{
   // A new laser scan has been observed. Decide whether to add it as a pose
   // for SLAM. If decided to add, align it to the scan from the last saved pose,
   // and save both the scan and the optimized pose.
 }
 
-void SLAM::ObserveOdometry(const Vector2f& odom_loc, const float odom_angle) {
-  if (!odom_initialized_) {
+void SLAM::ObserveOdometry( const Vector2f& odom_loc, const float odom_angle ) 
+{
+  if ( !odom_initialized_ ) 
+  {
     prev_odom_angle_ = odom_angle;
     prev_odom_loc_ = odom_loc;
     odom_initialized_ = true;
+
     return;
   }
   // Keep track of odometry to estimate how far the robot has moved between 
   // poses.
 }
 
-vector<Vector2f> SLAM::GetMap() {
+vector<Vector2f> SLAM::GetMap() 
+{
   vector<Vector2f> map;
   // Reconstruct the map as a single aligned point cloud from all saved poses
   // and their respective scans.

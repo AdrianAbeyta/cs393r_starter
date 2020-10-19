@@ -31,34 +31,34 @@
 namespace slam {
 
 class SLAM {
- public:
-  // Default Constructor.
-  SLAM();
+  public:
+    // Default Constructor.
+    SLAM();
 
-  // Observe a new laser scan.
-  void ObserveLaser(const std::vector<float>& ranges,
-                    float range_min,
-                    float range_max,
-                    float angle_min,
-                    float angle_max);
+    // Observe a new laser scan.
+    void ObserveLaser( const std::vector<float>& ranges,
+                       float range_min,
+                       float range_max,
+                       float angle_min,
+                       float angle_max );
 
-  // Observe new odometry-reported location.
-  void ObserveOdometry(const Eigen::Vector2f& odom_loc,
-                       const float odom_angle);
+    // Observe new odometry-reported location.
+    void ObserveOdometry( const Eigen::Vector2f& odom_loc,
+                          const float odom_angle );
 
-  // Get latest map.
-  std::vector<Eigen::Vector2f> GetMap();
+    // Get latest map.
+    std::vector<Eigen::Vector2f> GetMap();
 
-  // Get latest robot pose.
-  void GetPose(Eigen::Vector2f* loc, float* angle) const;
+    // Get latest robot pose.
+    void GetPose (Eigen::Vector2f* loc, float* angle ) const;
 
- private:
-
-  // Previous odometry-reported locations.
-  Eigen::Vector2f prev_odom_loc_;
-  float prev_odom_angle_;
-  bool odom_initialized_;
+  private:
+    // Previous odometry-reported locations.
+    Eigen::Vector2f prev_odom_loc_;
+    float prev_odom_angle_;
+    bool odom_initialized_;
 };
+
 }  // namespace slam
 
 #endif   // SRC_SLAM_H_
