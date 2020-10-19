@@ -55,12 +55,19 @@ SLAM::SLAM()
     odom_initialized_( false ) 
   {}
 
+
 void SLAM::GetPose( Eigen::Vector2f* loc, float* angle ) const 
 {
+  if(!loc || !angle)
+  {
+    std::cout<<" SLAM::GetPose() was passed a nullptr! What the hell man...\n";
+    return;
+  }
   // Return the latest pose estimate of the robot.
-  *loc = Vector2f( 0, 0 );
-  *angle = 0;
+  *loc = state_loc_;
+  *angle = state_angle_;
 }
+
 
 void SLAM::ObserveLaser( const vector<float>& ranges,
                          float range_min,
@@ -72,6 +79,7 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   // for SLAM. If decided to add, align it to the scan from the last saved pose,
   // and save both the scan and the optimized pose.
 }
+
 
 void SLAM::ObserveOdometry( const Vector2f& odom_loc, const float odom_angle ) 
 {
@@ -85,7 +93,21 @@ void SLAM::ObserveOdometry( const Vector2f& odom_loc, const float odom_angle )
   }
   // Keep track of odometry to estimate how far the robot has moved between 
   // poses.
+  
+  const Eigen::Rotation2D<float> base_link_rot( -prev_odom_angle_ );        // THIS HAS TO BE NEGATIVE :)
+  Vector2f delta_T_bl = base_link_rot*( odom_loc - prev_odom_loc_ );  // delta_T_base_link: pres 6 slide 14
+  double const delta_angle_bl = odom_angle - prev_odom_angle_;        // delta_angle_base_link: pres 6 slide 15
+  
+  Eigen::Rotation2D<float> map_rot( state_angle_ );
+  state_loc_ += map_rot*delta_T_bl;
+  state_angle_ += delta_angle_bl;
+
+  prev_odom_loc_ = odom_loc;
+  prev_odom_angle_ = odom_angle;
+
+  return;
 }
+
 
 vector<Vector2f> SLAM::GetMap() 
 {
