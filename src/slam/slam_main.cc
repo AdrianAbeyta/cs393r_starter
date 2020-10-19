@@ -60,6 +60,7 @@ using ros::Time;
 using std::string;
 using std::vector;
 using Eigen::Vector2f;
+using Eigen::MatrixXf;
 using visualization::ClearVisualizationMsg;
 using visualization::DrawArc;
 using visualization::DrawPoint;
@@ -133,8 +134,42 @@ void PublishCloud() {
   {
     visualization::DrawCross(p, 0.05, 0xC0C0C0, vis_msg_);
   }
+
   visualization_publisher_.publish(vis_msg_);
+
+  std::cout << "Pub cloud\n";
+  return;
 }
+
+
+void PublishRaster() {
+  static double t_last = 0;
+  if (GetMonotonicTime() - t_last < 0.5) {
+    // Rate-limit visualization.
+    return;
+  }
+  t_last = GetMonotonicTime();
+  vis_msg_.header.stamp = ros::Time::now();
+  ClearVisualizationMsg(vis_msg_);
+
+  MatrixXf raster;
+  float resolution;
+  slam_.GetRaster( &resolution, &raster );
+
+  for( int j=1-raster.cols()/2.0; j<raster.cols()/2; ++j ) 
+  {
+    for( int i=1-raster.rows()/2; i<raster.rows()/2; ++i )
+    {
+      Vector2f temp(i*resolution, j*resolution);
+      visualization::DrawCross(temp, 0.005*raster(i+raster.rows()/2,j+raster.cols()/2.0), 0xC0C0C0, vis_msg_);
+    }
+  }
+
+  visualization_publisher_.publish( vis_msg_ );
+
+  return;
+}
+
 
 void LaserCallback(const sensor_msgs::LaserScan& msg) {
   if (FLAGS_v > 0) {
@@ -149,7 +184,8 @@ void LaserCallback(const sensor_msgs::LaserScan& msg) {
       msg.angle_max);
   PublishMap();
   PublishPose();
-  PublishCloud();
+  // PublishCloud();
+  PublishRaster();
 }
 
 void OdometryCallback(const nav_msgs::Odometry& msg) {
