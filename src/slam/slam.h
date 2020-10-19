@@ -34,7 +34,7 @@ struct PoseScan
 {
   // map frame pose
   Eigen::Vector2f const state_loc;
-  float const state_angle_;
+  float const state_angle;
 
   // base_link referenced point cloud 
   // TODO- why shouldn't this be in the map frame?
@@ -72,13 +72,22 @@ class SLAM {
 
     // List of poses and their associated scan point cloud
     std::vector<PoseScan> map_pose_scan_;
-
+    bool map_initialized_;
 
     // Robot's maximum likelihood pose estimate
     Eigen::Vector2f state_loc_;
     float state_angle_;
 
+    // Minumum translation before new scan will be registered
+    float const min_trans_ = 0.5;
+    // Minumum rotation before new scan will be registered
+    float const min_rot_ = M_PI/6;
+
 };
+
+std::vector<Eigen::Vector2f> ScanToPointCloud( const std::vector<float>& ranges,
+                                               const float angle_min,
+                                               const float angle_max );
 
 }  // namespace slam
 
