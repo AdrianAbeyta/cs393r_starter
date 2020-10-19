@@ -64,6 +64,9 @@ class SLAM {
     // Get latest robot pose.
     void GetPose (Eigen::Vector2f* loc, float* angle ) const;
 
+    // Get latest point_cloud from map_pose_scan.
+    void GetCloud ( std::vector<Eigen::Vector2f>* point_cloud ) const;
+
   private:
     // Previous odometry-reported locations.
     Eigen::Vector2f prev_odom_loc_;
@@ -97,6 +100,11 @@ class SLAM {
     // Sensor noise
     float const sigma_s_ = 0.25; 
 };
+
+void GenerateRaster( const std::vector<Eigen::Vector2f>& pcl,
+                     const float& resolution,
+                     const float sensor_noise,
+                     Eigen::MatrixXf* raster_ptr);
 
 std::vector<Eigen::Vector2f> ScanToPointCloud( const std::vector<float>& ranges,
                                                const float angle_min,
