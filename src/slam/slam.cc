@@ -30,6 +30,8 @@
 #include "shared/math/math_util.h"
 #include "shared/util/timer.h"
 
+#include <numeric>
+
 #include "slam.h"
 
 #include "vector_map/vector_map.h"
@@ -40,6 +42,7 @@ using Eigen::Rotation2Df;
 using Eigen::Translation2f;
 using Eigen::Vector2f;
 using Eigen::Vector2i;
+using Eigen::MatrixXf;
 using std::cout;
 using std::endl;
 using std::string;
@@ -83,7 +86,7 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   {
     map_pose_scan_.clear();
 
-    // Note that the first cloud does not need to be transformed to world frame becasue it is the world frame!
+    // Note that the first cloud does not need to be transformed to world frame becasue it defines the world frame!
     PoseScan origin{ state_loc_, 
                      state_angle_, 
                      ScanToPointCloud( ranges, angle_min, angle_max ) };
@@ -97,13 +100,6 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
       fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
   {
-    PoseScan node;
-    node.state_loc = state_loc_; 
-    node.state_angle = state_angle_;
-    node.point_cloud = ScanToPointCloud( ranges, angle_min, angle_max ) ; 
-
-    map_pose_scan_.push_back( node );
-
     return;
   }
 }
@@ -143,6 +139,40 @@ vector<Vector2f> SLAM::GetMap()
   // Reconstruct the map as a single aligned point cloud from all saved poses
   // and their respective scans.
   return map;
+}
+
+
+void GenerateRaster( const vector<Vector2f>& pcl,
+                     const float& resolution,
+                     const float sensor_noise,
+                     MatrixXf* raster_ptr)
+{
+  // Pointcloud should be in the base_link frame
+  if( !raster_ptr )
+  {
+    std::cout<<"GenerateRaster() was passed a nullptr! What the hell man...\n";
+    return;
+  }
+
+  MatrixXf& raster = *raster_ptr;
+
+  
+  for(int j=-raster.cols()/2.0; j<raster.cols()/2; ++j) 
+  {
+    for(int i=-raster.rows()/2; i<raster.rows()/2; ++i)
+    {
+      auto likelihood = [ i, j, resolution, sensor_noise ]
+                         ( double a, Vector2f b )
+                         { Vector2f temp(i*resolution, j*resolution);
+                           float err = (b-temp).norm();
+                           return a - 0.5*(err*err)/(sensor_noise*sensor_noise); };
+
+      raster(i,j) = std::accumulate(pcl.begin(), pcl.end(), 0.0, likelihood);
+    }
+  }
+
+
+  return;
 }
 
 
