@@ -81,6 +81,8 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   // and save both the scan and the optimized pose.
   if( !map_initialized_ )
   {
+    map_pose_scan_.clear();
+    
     PoseScan origin{ state_loc_, 
                      state_angle_, 
                      ScanToPointCloud( ranges, angle_min, angle_max ) }; //Have use initializer list because PoseScan uses const
@@ -99,7 +101,8 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
                     ScanToPointCloud( ranges, angle_min, angle_max ) }; //Have use initializer list because PoseScan uses const
 
     map_pose_scan_.push_back( node );
-    std::cout << "We need to add this laser scan!\n";
+
+    return;
   }
 }
 
