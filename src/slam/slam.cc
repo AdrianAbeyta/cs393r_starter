@@ -72,6 +72,19 @@ void SLAM::GetPose( Eigen::Vector2f* loc, float* angle ) const
   *angle = state_angle_;
 }
 
+void SLAM::GetCloud ( vector<Vector2f>* point_cloud ) const
+{
+  if( !point_cloud )
+  {
+    std::cout<<" SLAM::GetCloud() was passed a nullptr! What the hell man...\n";
+    return;
+  }
+
+  *point_cloud = map_pose_scan_.back().point_cloud;
+
+  return;
+}
+
 
 void SLAM::ObserveLaser( const vector<float>& ranges,
                          float range_min,
@@ -93,6 +106,11 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
 
     map_pose_scan_.push_back( origin );
 
+    // GenerateRaster( origin.point_cloud,
+    //                 resolution_,
+    //                 sigma_s_,
+    //                 &raster_);
+
     map_initialized_ = true;
     return;
   }
@@ -100,6 +118,12 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
       fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
   {
+    PoseScan node{ state_loc_, 
+                   state_angle_, 
+                   ScanToPointCloud( ranges, angle_min, angle_max ) };
+
+    map_pose_scan_.push_back( node );
+
     return;
   }
 }
@@ -167,7 +191,7 @@ void GenerateRaster( const vector<Vector2f>& pcl,
                            float err = (b-temp).norm();
                            return a - 0.5*(err*err)/(sensor_noise*sensor_noise); };
 
-      raster(i,j) = std::accumulate(pcl.begin(), pcl.end(), 0.0, likelihood);
+      raster(i+raster.rows()/2,j+raster.cols()/2.0) = std::accumulate(pcl.begin(), pcl.end(), 0.0, likelihood);
     }
   }
 
