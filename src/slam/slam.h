@@ -30,6 +30,18 @@
 
 namespace slam {
 
+struct PoseScan
+{
+  // map frame pose
+  Eigen::Vector2f const state_loc;
+  float const state_angle_;
+
+  // base_link referenced point cloud 
+  // TODO- why shouldn't this be in the map frame?
+  std::vector<Eigen::Vector2f> point_cloud;
+
+};
+
 class SLAM {
   public:
     // Default Constructor.
@@ -58,6 +70,11 @@ class SLAM {
     float prev_odom_angle_;
     bool odom_initialized_;
 
+    // List of poses and their associated scan point cloud
+    std::vector<PoseScan> map_pose_scan_;
+
+
+    // Robot's maximum likelihood pose estimate
     Eigen::Vector2f state_loc_;
     float state_angle_;
 
