@@ -121,28 +121,27 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
 
     map_pose_scan_.push_back( origin );
 
-    GenerateRaster( origin.point_cloud,
-                    resolution_,
-                    sigma_s_,
-                    &raster_ );
-
     map_initialized_ = true;
+
     return;
   }
 
   if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
       fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
   {
+    // Relative transforms given just odom
+    // Vector2f const relative_loc = state_loc_ - map_pose_scan_.back().state_loc  ;
+    // float const relative_angle = state_angle_ - map_pose_scan_.back().state_angle  ;
+
+    // PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
+    //                map_pose_scan_.back().state_angle + relative_angle, 
+    //                ScanToPointCloud( ranges, angle_min, angle_max ) };
+
     PoseScan node{ state_loc_, 
                    state_angle_, 
                    ScanToPointCloud( ranges, angle_min, angle_max ) };
 
     map_pose_scan_.push_back( node );
-
-    // GenerateRaster( node.point_cloud,
-    //                 resolution_,
-    //                 sigma_s_,
-    //                 &raster_ );
 
     return;
   }
@@ -182,6 +181,15 @@ vector<Vector2f> SLAM::GetMap()
   vector<Vector2f> map;
   // Reconstruct the map as a single aligned point cloud from all saved poses
   // and their respective scans.
+  
+  vector<Vector2f> temp = TransformPointCloud( map_pose_scan_.back().point_cloud,
+                                               map_pose_scan_.back().state_loc,
+                                               map_pose_scan_.back().state_angle );
+  for(const auto& p: temp)
+  {
+    map.push_back(p);
+  }
+                                  
   return map;
 }
 
@@ -245,9 +253,9 @@ vector<Vector2f> ScanToPointCloud( const vector<float>& ranges,
 }
 
 
-std::vector<Eigen::Vector2f> TransformPointCloud( const vector<Vector2f>& in,
-                                                  const Vector2f translation,
-                                                  const float rotation )
+vector<Vector2f> TransformPointCloud( const vector<Vector2f>& in,
+                                      const Vector2f translation,
+                                      const float rotation )
 {
   vector<Vector2f> out;
   out.reserve( in.size() );
@@ -256,7 +264,7 @@ std::vector<Eigen::Vector2f> TransformPointCloud( const vector<Vector2f>& in,
 
   for(auto& p: in)
   {
-    out.push_back(rot*(translation + p));
+    out.push_back( translation + rot*p ); // This should not be rot*( translation + p ) FML
   }
 
   return out;

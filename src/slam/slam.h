@@ -84,9 +84,9 @@ class SLAM {
     float state_angle_;
 
     // Minumum translation before new scan will be registered
-    float const min_trans_ = 0.5;
+    float const min_trans_ = 0.25;
     // Minumum rotation before new scan will be registered
-    float const min_rot_ = M_PI/6;
+    float const min_rot_ = M_PI/10;
 
     // Raster dimensions
     float const raster_height_ = 12.0; // m
