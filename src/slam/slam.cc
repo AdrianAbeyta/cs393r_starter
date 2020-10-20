@@ -130,15 +130,11 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
       fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
   {
     // Relative transforms given just odom
-    // Vector2f const relative_loc = state_loc_ - map_pose_scan_.back().state_loc  ;
-    // float const relative_angle = state_angle_ - map_pose_scan_.back().state_angle  ;
+    Vector2f const relative_loc = state_loc_ - map_pose_scan_.back().state_loc  ;
+    float const relative_angle = state_angle_ - map_pose_scan_.back().state_angle  ;
 
-    // PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
-    //                map_pose_scan_.back().state_angle + relative_angle, 
-    //                ScanToPointCloud( ranges, angle_min, angle_max ) };
-
-    PoseScan node{ state_loc_, 
-                   state_angle_, 
+    PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
+                   map_pose_scan_.back().state_angle + relative_angle, 
                    ScanToPointCloud( ranges, angle_min, angle_max ) };
 
     map_pose_scan_.push_back( node );
@@ -182,14 +178,17 @@ vector<Vector2f> SLAM::GetMap()
   // Reconstruct the map as a single aligned point cloud from all saved poses
   // and their respective scans.
   
-  vector<Vector2f> temp = TransformPointCloud( map_pose_scan_.back().point_cloud,
-                                               map_pose_scan_.back().state_loc,
-                                               map_pose_scan_.back().state_angle );
-  for(const auto& p: temp)
+ 
+  for(const auto& mps: map_pose_scan_)
   {
-    map.push_back(p);
-  }
-                                  
+     vector<Vector2f> temp = TransformPointCloud( mps.point_cloud,
+                                                  mps.state_loc,
+                                                  mps.state_angle );
+    for(const auto& p: temp)
+    {
+      map.push_back(p);
+    }
+  }                         
   return map;
 }
 
