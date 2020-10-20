@@ -32,12 +32,11 @@ namespace slam {
 
 struct PoseScan
 {
-  // map frame pose
+  // map frame pose- this should be the optimized pose
   Eigen::Vector2f state_loc;
   float state_angle;
 
-  // base_link referenced point cloud 
-  // TODO- why shouldn't this be in the map frame?
+  // map or base_link referenced point cloud 
   std::vector<Eigen::Vector2f> point_cloud;
 
 };
@@ -95,13 +94,13 @@ class SLAM {
     
     // Raster
     // Robot is at 0,0 of raster
-    float const resolution_ = 0.2; // m
+    float const resolution_ = 0.1; // m
     int const rows =  2*raster_height_/resolution_;
     int const cols = 2*raster_width_/resolution_;
     Eigen::MatrixXf raster_{ rows, cols };
     
     // Sensor noise
-    float const sigma_s_ = 1.0; 
+    float const sigma_s_ = 0.2; 
 };
 
 void GenerateRaster( const std::vector<Eigen::Vector2f>& pcl,

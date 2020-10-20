@@ -117,14 +117,14 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     // Note that the first cloud does not need to be transformed to world frame becasue it defines the world frame!
     PoseScan origin{ state_loc_, 
                      state_angle_, 
-                     ScanToPointCloud( ranges, angle_min, angle_max ) };
+                     ScanToPointCloud(ranges, angle_min, angle_max) };
 
     map_pose_scan_.push_back( origin );
 
     GenerateRaster( origin.point_cloud,
                     resolution_,
                     sigma_s_,
-                    &raster_);
+                    &raster_ );
 
     map_initialized_ = true;
     return;
@@ -143,7 +143,7 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     GenerateRaster( node.point_cloud,
                     resolution_,
                     sigma_s_,
-                    &raster_);
+                    &raster_ );
 
     return;
   }
@@ -190,9 +190,9 @@ vector<Vector2f> SLAM::GetMap()
 void GenerateRaster( const vector<Vector2f>& pcl,
                      const float& resolution,
                      const float sensor_noise,
-                     MatrixXf* raster_ptr)
+                     MatrixXf* raster_ptr )
 {
-  // Pointcloud should be in the base_link frame
+  // Pointcloud should be in the map frame
   if( !raster_ptr )
   {
     std::cout<<"GenerateRaster() was passed a nullptr! What the hell man...\n";
@@ -201,26 +201,19 @@ void GenerateRaster( const vector<Vector2f>& pcl,
 
   MatrixXf& raster = *raster_ptr;
 
-  
-  for(int j=1-raster.cols()/2.0; j<raster.cols()/2; ++j) 
+  // Column first iteration is supposed to reduce cache misses and speed things up
+  // but i didn't do benchmarks so who really cares?
+  for( int j=1-raster.cols()/2.0; j<raster.cols()/2; ++j ) 
   {
-    for(int i=1-raster.rows()/2; i<raster.rows()/2; ++i)
+    for( int i=1-raster.rows()/2; i<raster.rows()/2; ++i )
     {
-      // auto likelihood = [ i, j, resolution, sensor_noise ]
-      //                    ( double a, Vector2f b )
-      //                    { Vector2f temp(i*resolution, j*resolution);
-      //                      float err = (b-temp).norm();
-      //                      return a - 0.5*(err*err)/(sensor_noise*sensor_noise); };
-      //
-      // raster(i+raster.rows()/2,j+raster.cols()/2.0) = std::accumulate(pcl.begin(), pcl.end(), 0.0, likelihood);
-
-      raster(i+raster.rows()/2,j+raster.cols()/2.0) = 0;
+      // Make this loop a lambda/algorithm- hand rolled loops are bad!
+      raster(i+raster.rows()/2,j+raster.cols()/2.0) = 1.0;  // Must be zero because this is a multiplication fold
       for(const auto& p: pcl)
       { 
         Vector2f temp( i*resolution, j*resolution );
-        raster(i+raster.rows()/2,j+raster.cols()/2.0) += exp( -(temp-p).norm()*(temp-p).norm() );
+        raster( i+raster.rows()/2, j+raster.cols()/2.0 ) *= exp( -0.5*(temp-p).norm()*(temp-p).norm()/(sensor_noise*sensor_noise) );
       }
-      
     }
   }
 
@@ -240,14 +233,10 @@ vector<Vector2f> ScanToPointCloud( const vector<float>& ranges,
   point_cloud.reserve( ranges.size() );
 
   float const angle_increment = ( angle_max - angle_min )/ranges.size();
-
   for( size_t i=0; i<ranges.size(); ++i )
   {
     double const theta = angle_min + angle_increment*i; 
-    
-    // Rotation
     Vector2f point( cos(theta)*ranges[i], sin(theta)*ranges[i] ); 
-    // Translation
     point += kLaserLoc; 
 
     point_cloud.push_back( point );
