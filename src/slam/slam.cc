@@ -245,7 +245,7 @@ vector<Vector2f> ScanToPointCloud( const vector<float>& ranges,
 }
 
 
-std::vector<Eigen::Vector2f> TransformPointCloud( const vector<Vector2f> in,
+std::vector<Eigen::Vector2f> TransformPointCloud( const vector<Vector2f>& in,
                                                   const Vector2f translation,
                                                   const float rotation )
 {
@@ -260,6 +260,32 @@ std::vector<Eigen::Vector2f> TransformPointCloud( const vector<Vector2f> in,
   }
 
   return out;
+}
+
+
+double RasterWeighting( const MatrixXf& raster,
+                        const float resolution,
+                        const vector<Vector2f>& point_cloud )
+{
+  // The point cloud given to this function should be transformed back to the rasters base_link
+  // It is this reverse relative transfrom that we are essentially evaluating here
+  double likelihood = 0.0;
+  int i, j; // row, col
+
+  for(auto& p: point_cloud)
+  {
+    // Check if the point is within the rasters dimensions
+    if( fabs( p.x() ) < resolution*raster.rows()/2 &&
+        fabs( p.y() ) < resolution*raster.cols()/2 )
+    {
+      i = p.x()/resolution;
+      j = p.y()/resolution;
+
+      likelihood += raster( i+raster.rows()/2, j+raster.cols()/2 );
+    }
+  }
+
+  return likelihood;
 }
 
 
