@@ -130,9 +130,8 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     return;
   }
 
-  // if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
-  //     fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
-  if( true )
+  if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
+      fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
   {
     PoseScan node{ state_loc_, 
                    state_angle_, 
@@ -207,12 +206,12 @@ void GenerateRaster( const vector<Vector2f>& pcl,
   {
     for( int i=1-raster.rows()/2; i<raster.rows()/2; ++i )
     {
-      // Make this loop a lambda/algorithm- hand rolled loops are bad!
-      raster(i+raster.rows()/2,j+raster.cols()/2.0) = 1.0;  // Must be zero because this is a multiplication fold
+      // Make this loop a lambda+algorithm- hand rolled loops are bad!
+      raster(i+raster.rows()/2,j+raster.cols()/2.0) = 0.0;  
       for(const auto& p: pcl)
       { 
         Vector2f temp( i*resolution, j*resolution );
-        raster( i+raster.rows()/2, j+raster.cols()/2.0 ) *= exp( -0.5*(temp-p).norm()*(temp-p).norm()/(sensor_noise*sensor_noise) );
+        raster( i+raster.rows()/2, j+raster.cols()/2.0 ) += exp( -0.5*(temp-p).norm()*(temp-p).norm()/(sensor_noise*sensor_noise) );
       }
     }
   }
