@@ -94,7 +94,7 @@ class SLAM {
     
     // Raster
     // Robot is at 0,0 of raster
-    float const resolution_ = 0.1; // m
+    float const resolution_ = 0.35; // m
     int const rows =  2*raster_height_/resolution_;
     int const cols = 2*raster_width_/resolution_;
     Eigen::MatrixXf raster_{ rows, cols };
@@ -111,6 +111,10 @@ void GenerateRaster( const std::vector<Eigen::Vector2f>& pcl,
 std::vector<Eigen::Vector2f> ScanToPointCloud( const std::vector<float>& ranges,
                                                const float angle_min,
                                                const float angle_max );
+
+std::vector<Eigen::Vector2f> TransformPointCloud( const std::vector<Eigen::Vector2f> in,
+                                                  const Eigen::Vector2f translation,
+                                                  const float rotation );
 
 }  // namespace slam
 

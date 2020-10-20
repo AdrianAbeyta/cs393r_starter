@@ -139,10 +139,10 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
 
     map_pose_scan_.push_back( node );
 
-    GenerateRaster( node.point_cloud,
-                    resolution_,
-                    sigma_s_,
-                    &raster_ );
+    // GenerateRaster( node.point_cloud,
+    //                 resolution_,
+    //                 sigma_s_,
+    //                 &raster_ );
 
     return;
   }
@@ -162,11 +162,11 @@ void SLAM::ObserveOdometry( const Vector2f& odom_loc, const float odom_angle )
   // Keep track of odometry to estimate how far the robot has moved between 
   // poses.
   
-  const Eigen::Rotation2D<float> base_link_rot( -prev_odom_angle_ );        // THIS HAS TO BE NEGATIVE :)
+  const Rotation2Df base_link_rot( -prev_odom_angle_ );        // THIS HAS TO BE NEGATIVE :)
   Vector2f delta_T_bl = base_link_rot*( odom_loc - prev_odom_loc_ );  // delta_T_base_link: pres 6 slide 14
   double const delta_angle_bl = odom_angle - prev_odom_angle_;        // delta_angle_base_link: pres 6 slide 15
   
-  Eigen::Rotation2D<float> map_rot( state_angle_ );
+  Rotation2Df map_rot( state_angle_ );
   state_loc_ += map_rot*delta_T_bl;
   state_angle_ += delta_angle_bl;
 
@@ -243,5 +243,24 @@ vector<Vector2f> ScanToPointCloud( const vector<float>& ranges,
   
   return point_cloud;
 }
+
+
+std::vector<Eigen::Vector2f> TransformPointCloud( const vector<Vector2f> in,
+                                                  const Vector2f translation,
+                                                  const float rotation )
+{
+  vector<Vector2f> out;
+  out.reserve( in.size() );
+
+  const Rotation2Df rot( rotation );
+
+  for(auto& p: in)
+  {
+    out.push_back(rot*(translation + p));
+  }
+
+  return out;
+}
+
 
 }  // namespace slam
