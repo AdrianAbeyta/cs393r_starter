@@ -93,12 +93,12 @@ class SLAM {
     float const min_rot_ = M_PI/5;
 
     // Raster dimensions
-    float const raster_height_ = 2.0; // m
-    float const raster_width_ = 2.0;  // m
+    float const raster_height_ = 10.0; // m
+    float const raster_width_ = 10.0;  // m
     
     // Raster
     // Robot is at 0,0 of raster
-    float const resolution_ = 0.05; // m
+    float const resolution_ = 0.25; // m
     int const rows =  2*raster_height_/resolution_;
     int const cols = 2*raster_width_/resolution_;
     Eigen::MatrixXf raster_{ rows, cols };

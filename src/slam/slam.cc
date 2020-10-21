@@ -164,21 +164,23 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     {
       float relative_angle_sample = relative_angle_mle + a*angle_std_dev/angle_samples_;
 
-      for( int l = 1-loc_samples_/2; l < loc_samples_/2; ++l ) 
+      for( int ix = 1-loc_samples_/2; ix < loc_samples_/2; ++ix ) 
       {
+        for( int iy = 1-loc_samples_/2; iy < loc_samples_/2; ++iy ) 
+        {
+          Vector2f relative_loc_sample( relative_loc_mle.x()+ix*loc_std_dev/loc_samples_,
+                                        relative_loc_mle.y()+iy*loc_std_dev/loc_samples_ );
 
-        Vector2f relative_loc_sample( relative_loc_mle.x()+l*loc_std_dev/loc_samples_,
-                                      relative_loc_mle.y()+l*loc_std_dev/loc_samples_ );
-
-        float temp = RasterWeighting( raster_,
+          float temp = RasterWeighting( raster_,
                                       resolution_,
                                       TransformPointCloud(pcl, relative_loc_sample, relative_angle_sample) );
 
-        if( likelihood < temp )
-        {
-          likelihood = temp;
-          relative_loc = relative_loc_sample;
-          relative_angle = relative_angle_sample;
+          if( likelihood < temp )
+          {
+            likelihood = temp;
+            relative_loc = relative_loc_sample;
+            relative_angle = relative_angle_sample;
+          }
         }
       }
     }
