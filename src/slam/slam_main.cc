@@ -119,7 +119,7 @@ void PublishPose() {
 
 void PublishCloud() {
   static double t_last = 0;
-  if (GetMonotonicTime() - t_last < 0.5) {
+  if (GetMonotonicTime() - t_last < 0.25) {
     // Rate-limit visualization.
     return;
   }
@@ -135,22 +135,18 @@ void PublishCloud() {
     visualization::DrawCross(p, 0.05, 0xC0C0C0, vis_msg_);
   }
 
-  visualization_publisher_.publish(vis_msg_);
-
-  std::cout << "Pub cloud\n";
   return;
 }
 
 
 void PublishRaster() {
   static double t_last = 0;
-  if (GetMonotonicTime() - t_last < 0.5) {
+  if (GetMonotonicTime() - t_last < 0.25) {
     // Rate-limit visualization.
     return;
   }
   t_last = GetMonotonicTime();
   vis_msg_.header.stamp = ros::Time::now();
-  ClearVisualizationMsg(vis_msg_);
 
   MatrixXf raster;
   float resolution;

@@ -89,8 +89,12 @@ void SLAM::GetPose( Eigen::Vector2f* loc, float* angle ) const
   }
 
   // Return the latest pose estimate of the robot.
-  *loc = state_loc_;
-  *angle = state_angle_;
+  if( map_initialized_ &&
+      odom_initialized_ )
+  {
+    *loc = state_loc_;
+    *angle = state_angle_;
+  }
 }
 
 void SLAM::GetCloud ( vector<Vector2f>* point_cloud ) const
@@ -150,39 +154,47 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     prev_state_loc_ = state_loc_;
     prev_state_angle_ = state_angle_;
 
+    GenerateRaster( origin.point_cloud,
+                    resolution_,
+                    sigma_s_,
+                    &raster_ );
+
     return;
   }
 
   // Default && short circuits so we wont get segfault if map_pose_scan doesnt have its first element
   if( odom_initialized_ &&
       map_initialized_ &&
-      ((map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
-      fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_) )
+      ((prev_state_loc_ - state_loc_).norm() > min_trans_ ||
+      fabs(prev_state_angle_ - state_angle_) > min_rot_) )
   {
+    
     // This is the raster for the scan at our last update. The goal is to maximize the correlation between
     // the scan we just got, and this raster
     GenerateRaster( map_pose_scan_.back().point_cloud,
                     resolution_,
                     sigma_s_,
                     &raster_ );
-    
+
     // This converts the scan we just got to a pointcloud
     vector<Vector2f> pcl = ScanToPointCloud( ranges,
                                              angle_min,
                                              angle_max);
+                                        
 
     // This is the mean value of our relative transform- this is the center of our voxel cube, and 
     // our goal is to find the cell in that cube that is the best relative transform
     Vector2f const relative_loc_mle = state_loc_ - prev_state_loc_ ; // mle = maximum likelihood estimate
     float const relative_angle_mle = state_angle_ - prev_state_angle_;
-    
+
+
     prev_state_loc_ = state_loc_;
     prev_state_angle_ = state_angle_;
 
     // We use these as progress capture devices (read: keep most likely relative transform)
-    float likelihood = 0.0;
     Vector2f relative_loc( 0, 0 );
     float relative_angle = 0;
+    float likelihood = 0.0;
 
     for(const auto& v: voxel_cube_)
     {
@@ -192,25 +204,27 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
                                                  TransformPointCloud(pcl, 
                                                                      (relative_loc_mle + v.delta_loc), 
                                                                      (relative_angle_mle + v.delta_angle)) );
-
       if( likelihood < raster_likelihood )
-      {
+      { 
         likelihood = raster_likelihood;
         relative_loc = relative_loc_mle + v.delta_loc;
         relative_angle = relative_angle_mle + v.delta_angle;
       }
     }
-    
-    std::cout << "ReLo: " << relative_loc.x() << " " << relative_loc.y() << std::endl;
+
+    // // DELETE
+    // relative_loc = relative_loc_mle;
+    // relative_angle = relative_angle_mle;
+    // // DELETE
 
     PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
                    map_pose_scan_.back().state_angle + relative_angle, 
                    pcl  };
 
-    std::cout << "Node: " << node.state_loc.x() << " " << node.state_loc.y() << std::endl;
-
     map_pose_scan_.push_back( node );
 
+    
+    
     return;
   }
 }
@@ -276,14 +290,14 @@ void GenerateRaster( const vector<Vector2f>& pcl,
     std::cout<<"GenerateRaster() was passed a nullptr! What the hell man...\n";
     return;
   }
-
+  
   MatrixXf& raster = *raster_ptr;
 
   // Column first iteration is supposed to reduce cache misses and speed things up
   // but i didn't do benchmarks so who really cares?
-  for( int j=1-raster.cols()/2.0; j<raster.cols()/2; ++j ) 
+  for( int j=-(raster.cols()-1)/2; j<=(raster.cols()-1)/2; ++j ) 
   {
-    for( int i=1-raster.rows()/2; i<raster.rows()/2; ++i )
+    for( int i=-(raster.rows()-1)/2; i<=(raster.rows()-1)/2; ++i )
     {
       // Make this loop a lambda+algorithm- hand rolled loops are bad!
       raster(i+raster.rows()/2,j+raster.cols()/2.0) = 0.0;  
@@ -351,16 +365,18 @@ double RasterWeighting( const MatrixXf& raster,
   double likelihood = 0.0;
   int i, j; // row, col
 
+  // std::cout << "rows: " << raster.rows() << " cols: " << raster.cols() << std::endl;
+
   for(auto& p: point_cloud)
   {
     // Check if the point is within the rasters dimensions
-    if( fabs( p.x() ) < resolution*raster.rows()/2 &&
-        fabs( p.y() ) < resolution*raster.cols()/2 )
+    if( fabs( p.x() ) < resolution*(raster.rows()-1)/2 &&
+        fabs( p.y() ) < resolution*(raster.cols()-1)/2 )
     {
       i = p.x()/resolution;
       j = p.y()/resolution;
 
-      likelihood += raster( i+raster.rows()/2, j+raster.cols()/2 );
+      likelihood += raster( i+(raster.rows()-1)/2, j+(raster.cols()-1)/2 );
     }
   }
 
