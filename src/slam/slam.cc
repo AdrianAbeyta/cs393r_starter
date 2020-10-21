@@ -57,7 +57,27 @@ SLAM::SLAM()
     prev_odom_angle_( 0 ),
     odom_initialized_( false ),
     map_initialized_( false ) 
-  {}
+  {
+    // Construct voxel cube
+    for( int a = -angle_samples_; a <= angle_samples_; ++a )  // Iterate over angle
+    {
+      float relative_angle_sample = a*angle_std_dev/angle_samples_;
+
+      for( int ix = -loc_samples_; ix <= loc_samples_; ++ix )   // Iterate over x
+      {
+
+        for( int iy = -loc_samples_; iy <= loc_samples_; ++iy )   // Iterate over y
+        {
+          Vector2f relative_loc_sample( ix*loc_std_dev/loc_samples_,
+                                        iy*loc_std_dev/loc_samples_ );
+          
+          Voxel temp{relative_loc_sample, relative_angle_sample};
+          
+          voxel_cube_.push_back( temp );
+        }
+      }
+    }
+  }
 
 
 void SLAM::GetPose( Eigen::Vector2f* loc, float* angle ) const 
@@ -80,8 +100,11 @@ void SLAM::GetCloud ( vector<Vector2f>* point_cloud ) const
     std::cout<<" SLAM::GetCloud() was passed a nullptr! What the hell man...\n";
     return;
   }
-
-  *point_cloud = map_pose_scan_.back().point_cloud;
+  if( map_initialized_ &&
+      odom_initialized_ )
+  {
+    *point_cloud = map_pose_scan_.back().point_cloud;
+  }
 
   return;
 }
@@ -130,8 +153,9 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     return;
   }
 
-  // Default && short circuits so we wont get segfault
+  // Default && short circuits so we wont get segfault if map_pose_scan doesnt have its first element
   if( odom_initialized_ &&
+      map_initialized_ &&
       ((map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
       fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_) )
   {
@@ -151,7 +175,7 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     // our goal is to find the cell in that cube that is the best relative transform
     Vector2f const relative_loc_mle = state_loc_ - prev_state_loc_ ; // mle = maximum likelihood estimate
     float const relative_angle_mle = state_angle_ - prev_state_angle_;
-
+    
     prev_state_loc_ = state_loc_;
     prev_state_angle_ = state_angle_;
 
@@ -160,38 +184,30 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     Vector2f relative_loc( 0, 0 );
     float relative_angle = 0;
 
-    for( int a = 1-angle_samples_/2; a < angle_samples_/2; ++a )
+    for(const auto& v: voxel_cube_)
     {
-      float relative_angle_sample = relative_angle_mle + a*angle_std_dev/angle_samples_;
+     
+      float raster_likelihood = RasterWeighting( raster_,
+                                                 resolution_,
+                                                 TransformPointCloud(pcl, 
+                                                                     (relative_loc_mle + v.delta_loc), 
+                                                                     (relative_angle_mle + v.delta_angle)) );
 
-      for( int ix = 1-loc_samples_/2; ix < loc_samples_/2; ++ix ) 
+      if( likelihood < raster_likelihood )
       {
-        for( int iy = 1-loc_samples_/2; iy < loc_samples_/2; ++iy ) 
-        {
-          Vector2f relative_loc_sample( relative_loc_mle.x()+ix*loc_std_dev/loc_samples_,
-                                        relative_loc_mle.y()+iy*loc_std_dev/loc_samples_ );
-
-          float temp = RasterWeighting( raster_,
-                                      resolution_,
-                                      TransformPointCloud(pcl, relative_loc_sample, relative_angle_sample) );
-
-          if( likelihood < temp )
-          {
-            likelihood = temp;
-            relative_loc = relative_loc_sample;
-            relative_angle = relative_angle_sample;
-          }
-        }
+        likelihood = raster_likelihood;
+        relative_loc = relative_loc_mle + v.delta_loc;
+        relative_angle = relative_angle_mle + v.delta_angle;
       }
     }
+    
+    std::cout << "ReLo: " << relative_loc.x() << " " << relative_loc.y() << std::endl;
 
     PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
                    map_pose_scan_.back().state_angle + relative_angle, 
-                   pcl };
+                   pcl  };
 
-    // // Provide a map referenced update to our state so that update odometry has a more accurate starting point
-    // state_loc_ = node.state_loc;
-    // state_angle_ = node.state_angle;
+    std::cout << "Node: " << node.state_loc.x() << " " << node.state_loc.y() << std::endl;
 
     map_pose_scan_.push_back( node );
 

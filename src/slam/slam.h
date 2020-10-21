@@ -41,6 +41,12 @@ struct PoseScan
 
 };
 
+struct Voxel
+{
+  Eigen::Vector2f delta_loc;
+  float delta_angle;
+};
+
 class SLAM {
   public:
     // Default Constructor.
@@ -88,13 +94,13 @@ class SLAM {
     float prev_state_angle_;
 
     // Minumum translation before new scan will be registered
-    float const min_trans_ = 1.0;
+    float const min_trans_ = 0.75;
     // Minumum rotation before new scan will be registered
-    float const min_rot_ = M_PI/5;
+    float const min_rot_ = M_PI/6;
 
     // Raster dimensions
-    float const raster_height_ = 10.0; // m
-    float const raster_width_ = 10.0;  // m
+    float const raster_height_ = 3.0; // m
+    float const raster_width_ = 3.0;  // m
     
     // Raster
     // Robot is at 0,0 of raster
@@ -107,11 +113,14 @@ class SLAM {
     float const sigma_s_ = 0.1; 
 
     // Voxel parameters
-    int const loc_samples_ = 5;
+    int const loc_samples_ = 5; // Total samples will be 2n+1
     float const loc_std_dev = 0.25;
     int const angle_samples_ = 5;
-    float const angle_std_dev = 1.57/4;
+    float const angle_std_dev = M_PI/8;
 
+    // Voxel cube- can be made at construction time if the odom noise is the same throughout 
+    // which we assume is true
+    std::vector<Voxel> voxel_cube_;
 };
 
 void GenerateRaster( const std::vector<Eigen::Vector2f>& pcl,
