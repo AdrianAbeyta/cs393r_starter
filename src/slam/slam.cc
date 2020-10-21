@@ -304,7 +304,11 @@ void GenerateRaster( const vector<Vector2f>& pcl,
       for(const auto& p: pcl)
       { 
         Vector2f temp( i*resolution, j*resolution );
-        raster( i+raster.rows()/2, j+raster.cols()/2.0 ) += exp( -0.5*(temp-p).norm()*(temp-p).norm()/(sensor_noise*sensor_noise) );
+        double const prob = exp( -0.5*(temp-p).norm()*(temp-p).norm()/(sensor_noise*sensor_noise) );
+        if( prob > raster( i+raster.rows()/2, j+raster.cols()/2.0 ))
+        {
+          raster( i+raster.rows()/2, j+raster.cols()/2.0 ) = prob;
+        }
       }
     }
   }

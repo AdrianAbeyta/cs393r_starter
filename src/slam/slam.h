@@ -99,24 +99,24 @@ class SLAM {
     float const min_rot_ = M_PI/6;
 
     // Raster dimensions
-    float const raster_height_ = 5.0; // m
-    float const raster_width_ = 3.0;  // m
+    float const raster_height_ = 8.5; // m 8.5
+    float const raster_width_ = 5.5;  // m 5.5
     
     // Raster
     // Robot is at 0,0 of raster
-    float const resolution_ = 0.03; // m
+    float const resolution_ = 0.075; // m 0.075
     int const rows =  2*raster_height_/resolution_;
     int const cols = 2*raster_width_/resolution_;
     Eigen::MatrixXf raster_{ rows+1, cols+1 };  // 2n+!
     
     // Sensor noise
-    float const sigma_s_ = 0.05; 
+    float const sigma_s_ = 0.2; // ~ 0.1-0.2
 
     // Voxel parameters
-    int const loc_samples_ = 20; // Total samples will be 2n+1
-    float const loc_std_dev = 0.2;
-    int const angle_samples_ = 20;
-    float const angle_std_dev = 0.2;
+    int const loc_samples_ = 10; // Total samples will be 2n+1 20
+    float const loc_std_dev = 0.4; // 0.2
+    int const angle_samples_ = 15; // 20
+    float const angle_std_dev = 0.3; // 0.2
 
     // Voxel cube- can be made at construction time if the odom noise is the same throughout 
     // which we assume is true
