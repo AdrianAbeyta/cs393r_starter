@@ -83,24 +83,35 @@ class SLAM {
     Eigen::Vector2f state_loc_;
     float state_angle_;
 
+    // Robot's odom at previous node
+    Eigen::Vector2f prev_state_loc_;
+    float prev_state_angle_;
+
     // Minumum translation before new scan will be registered
-    float const min_trans_ = 0.25;
+    float const min_trans_ = 1.0;
     // Minumum rotation before new scan will be registered
-    float const min_rot_ = M_PI/10;
+    float const min_rot_ = M_PI/5;
 
     // Raster dimensions
-    float const raster_height_ = 12.0; // m
-    float const raster_width_ = 12.0;  // m
+    float const raster_height_ = 2.0; // m
+    float const raster_width_ = 2.0;  // m
     
     // Raster
     // Robot is at 0,0 of raster
-    float const resolution_ = 0.25; // m
+    float const resolution_ = 0.05; // m
     int const rows =  2*raster_height_/resolution_;
     int const cols = 2*raster_width_/resolution_;
     Eigen::MatrixXf raster_{ rows, cols };
     
     // Sensor noise
-    float const sigma_s_ = 0.2; 
+    float const sigma_s_ = 0.1; 
+
+    // Voxel parameters
+    int const loc_samples_ = 5;
+    float const loc_std_dev = 0.25;
+    int const angle_samples_ = 5;
+    float const angle_std_dev = 1.57/4;
+
 };
 
 void GenerateRaster( const std::vector<Eigen::Vector2f>& pcl,
