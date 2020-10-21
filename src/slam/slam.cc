@@ -110,7 +110,8 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   // A new laser scan has been observed. Decide whether to add it as a pose
   // for SLAM. If decided to add, align it to the scan from the last saved pose,
   // and save both the scan and the optimized pose.
-  if( !map_initialized_ )
+  if( !map_initialized_ &&
+      odom_initialized_ )
   {
     map_pose_scan_.clear();
 
@@ -123,19 +124,72 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
 
     map_initialized_ = true;
 
+    prev_state_loc_ = state_loc_;
+    prev_state_angle_ = state_angle_;
+
     return;
   }
 
-  if( (map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
-      fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_ )
+  // Default && short circuits so we wont get segfault
+  if( odom_initialized_ &&
+      ((map_pose_scan_.back().state_loc - state_loc_).norm() > min_trans_ ||
+      fabs(map_pose_scan_.back().state_angle - state_angle_) > min_rot_) )
   {
-    // Relative transforms given just odom
-    Vector2f const relative_loc = state_loc_ - map_pose_scan_.back().state_loc  ;
-    float const relative_angle = state_angle_ - map_pose_scan_.back().state_angle  ;
+    // This is the raster for the scan at our last update. The goal is to maximize the correlation between
+    // the scan we just got, and this raster
+    GenerateRaster( map_pose_scan_.back().point_cloud,
+                    resolution_,
+                    sigma_s_,
+                    &raster_ );
+    
+    // This converts the scan we just got to a pointcloud
+    vector<Vector2f> pcl = ScanToPointCloud( ranges,
+                                             angle_min,
+                                             angle_max);
+
+    // This is the mean value of our relative transform- this is the center of our voxel cube, and 
+    // our goal is to find the cell in that cube that is the best relative transform
+    Vector2f const relative_loc_mle = state_loc_ - prev_state_loc_ ; // mle = maximum likelihood estimate
+    float const relative_angle_mle = state_angle_ - prev_state_angle_;
+
+    prev_state_loc_ = state_loc_;
+    prev_state_angle_ = state_angle_;
+
+    // We use these as progress capture devices (read: keep most likely relative transform)
+    float likelihood = 0.0;
+    Vector2f relative_loc( 0, 0 );
+    float relative_angle = 0;
+
+    for( int a = 1-angle_samples_/2; a < angle_samples_/2; ++a )
+    {
+      float relative_angle_sample = relative_angle_mle + a*angle_std_dev/angle_samples_;
+
+      for( int l = 1-loc_samples_/2; l < loc_samples_/2; ++l ) 
+      {
+
+        Vector2f relative_loc_sample( relative_loc_mle.x()+l*loc_std_dev/loc_samples_,
+                                      relative_loc_mle.y()+l*loc_std_dev/loc_samples_ );
+
+        float temp = RasterWeighting( raster_,
+                                      resolution_,
+                                      TransformPointCloud(pcl, relative_loc_sample, relative_angle_sample) );
+
+        if( likelihood < temp )
+        {
+          likelihood = temp;
+          relative_loc = relative_loc_sample;
+          relative_angle = relative_angle_sample;
+        }
+      }
+    }
 
     PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
                    map_pose_scan_.back().state_angle + relative_angle, 
-                   ScanToPointCloud( ranges, angle_min, angle_max ) };
+                   pcl };
+
+    // // Provide a map referenced update to our state so that update odometry has a more accurate starting point
+    // state_loc_ = node.state_loc;
+    // state_angle_ = node.state_angle;
 
     map_pose_scan_.push_back( node );
 
