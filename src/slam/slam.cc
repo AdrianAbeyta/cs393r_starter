@@ -18,7 +18,6 @@
 \author  Joydeep Biswas, (C) 2019
 */
 //========================================================================
-
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -35,6 +34,16 @@
 #include "slam.h"
 
 #include "vector_map/vector_map.h"
+
+// GTSam includes.
+#include "gtsam/geometry/Pose2.h"
+#include "gtsam/inference/Key.h"
+#include "gtsam/slam/BetweenFactor.h"
+#include "gtsam/nonlinear/NonlinearFactorGraph.h"
+#include "gtsam/nonlinear/GaussNewtonOptimizer.h"
+#include "gtsam/nonlinear/Marginals.h"
+#include "gtsam/nonlinear/Values.h"
+#include <gtsam/slam/PriorFactor.h>
 
 using namespace math_util;
 using Eigen::Affine2f;
@@ -78,6 +87,7 @@ SLAM::SLAM()
       }
     }
   }
+
 
 
 void SLAM::GetPose( Eigen::Vector2f* loc, float* angle ) const 
@@ -169,6 +179,13 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
       fabs(prev_state_angle_ - state_angle_) > min_rot_) )
   {
     
+    // Collect global pose information from the first run of CSM 
+    AddPoseInit(  map_pose_scan_.back().state_loc,
+                  map_pose_scan_.back().state_angle,
+                  map_pose_scan_.size(),
+                  &nlfg_init_ );
+
+
     // This is the raster for the scan at our last update. The goal is to maximize the correlation between
     // the scan we just got, and this raster
     GenerateRaster( map_pose_scan_.back().point_cloud,
@@ -180,26 +197,22 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     vector<Vector2f> pcl = ScanToPointCloud( ranges,
                                              angle_min,
                                              angle_max);
-                                        
-
     // This is the mean value of our relative transform- this is the center of our voxel cube, and 
     // our goal is to find the cell in that cube that is the best relative transform
     Vector2f const relative_loc_mle = state_loc_ - prev_state_loc_ ; // mle = maximum likelihood estimate
     float const relative_angle_mle = state_angle_ - prev_state_angle_;
-
 
     prev_state_loc_ = state_loc_;
     prev_state_angle_ = state_angle_;
 
     // We use these as progress capture devices (read: keep most likely relative transform)
     Vector2f relative_loc( 0, 0 );
-    float relative_angle = 0;
+    float relative_angle = 0.0;
     float likelihood = 0.0;
 
     for(const auto& v: voxel_cube_)
     {
-     
-      float raster_likelihood = RasterWeighting( raster_,
+     float raster_likelihood = RasterWeighting( raster_,
                                                  resolution_,
                                                  TransformPointCloud(pcl, 
                                                                      (relative_loc_mle + v.delta_loc), 
@@ -212,23 +225,72 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
       }
     }
 
-    // // DELETE
-    // relative_loc = relative_loc_mle;
-    // relative_angle = relative_angle_mle;
-    // // DELETE
-
     PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
                    map_pose_scan_.back().state_angle + relative_angle, 
                    pcl  };
 
     map_pose_scan_.push_back( node );
 
-    
-    
     return;
   }
 }
 
+void SLAM::ProcessMPSwithGTSAM(std::vector<PoseScan>* mps_ptr)
+{
+  if( !mps_ptr )
+  {
+    std::cout<<"ProcessMPSwithGTSAM was passed a nullptr! What the hell man...\n";
+    return;
+  }
+
+  std::vector<PoseScan>& mps = *mps_ptr; // mps = map_pose_scan
+  
+  std::vector<PoseScan> opt_rel_trans; //put at end 
+
+  //Gather mle estimate for every i to i+2 key in the dic. (read: mle = maximum likelihood estimate )
+  for( size_t i = 1 ; i < mps.size()-2 ; ++i)
+  {
+    Eigen::Vector2f  relative_loc_mle = mps[i].state_loc  - mps[i+2].state_loc ; 
+    float relative_angle_mle = mps[i].state_angle - mps[i+2].state_angle;
+  
+    // Raster from n pointcloud
+     GenerateRaster( mps[i].point_cloud,
+                     resolution_,
+                     sigma_s_,
+                     &raster_ );
+
+    // We use these as progress capture devices (read: keep most likely relative transform)
+    Vector2f relative_loc( 0, 0 );
+    float relative_angle = 0.0;
+    float likelihood = 0.0;
+
+    for(const auto& v: voxel_cube_)
+    {
+
+      float raster_likelihood = RasterWeighting( raster_,
+                                                 resolution_,
+                                                 mps[i+2].point_cloud);
+        if( likelihood < raster_likelihood )
+        { 
+          likelihood = raster_likelihood;
+          relative_loc = relative_loc_mle + v.delta_loc;
+          relative_angle = relative_angle_mle + v.delta_angle;
+        }
+    }
+
+        PoseScan node{ mps.back().state_loc + relative_loc, 
+                       mps.back().state_angle + relative_angle, 
+                       mps[i+2].point_cloud  };
+
+        opt_rel_trans.push_back( node );
+
+        
+        
+
+    return;
+  }
+  
+}
 
 void SLAM::ObserveOdometry( const Vector2f& odom_loc, const float odom_angle ) 
 {
@@ -387,5 +449,21 @@ double RasterWeighting( const MatrixXf& raster,
   return likelihood;
 }
 
-
 }  // namespace slam
+
+void AddPoseInit( const Eigen::Vector2f state_loc,
+                  const float state_angle ,
+                  const int index,
+                  gtsam::Values* nlfg_init_ptr )
+{
+   if( !nlfg_init_ptr )
+  {
+    std::cout<<"AddPoseInit() was passed a nullptr! What the hell man...\n";
+    return;
+  }
+  
+  gtsam::Values& nlfg_init = *nlfg_init_ptr;
+  
+  nlfg_init.insert( index, gtsam::Pose2(state_loc[0], state_loc[1], state_angle));
+  //nlfg_init.print("\nInitial Estimate:\n"); // print
+}

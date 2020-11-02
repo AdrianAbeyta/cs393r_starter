@@ -19,6 +19,14 @@
 */
 //========================================================================
 
+// GTSam includes.
+#include "gtsam/geometry/Pose2.h"
+#include "gtsam/inference/Key.h"
+#include "gtsam/slam/BetweenFactor.h"
+#include "gtsam/nonlinear/NonlinearFactorGraph.h"
+#include "gtsam/nonlinear/GaussNewtonOptimizer.h"
+#include "gtsam/nonlinear/Marginals.h"
+#include "gtsam/nonlinear/Values.h"
 #include <algorithm>
 #include <vector>
 
@@ -27,7 +35,6 @@
 
 #ifndef SRC_SLAM_H_
 #define SRC_SLAM_H_
-
 namespace slam {
 
 struct PoseScan
@@ -51,7 +58,6 @@ class SLAM {
   public:
     // Default Constructor.
     SLAM();
-
     // Observe a new laser scan.
     void ObserveLaser( const std::vector<float>& ranges,
                        float range_min,
@@ -75,7 +81,11 @@ class SLAM {
     // Get the raster of the latest point_cloud from map_pose_scan.
     void GetRaster( float* resolution, Eigen::MatrixXf* raster );
 
+    // TODO
+    void ProcessMPSwithGTSAM( std::vector<PoseScan>* mps );
+    
   private:
+    
     // Previous odometry-reported locations.
     Eigen::Vector2f prev_odom_loc_;
     float prev_odom_angle_;
@@ -84,6 +94,9 @@ class SLAM {
     // List of poses and their associated scan point cloud
     std::vector<PoseScan> map_pose_scan_;
     bool map_initialized_;
+
+    // List of poses and their associated scan point cloud of multiple runs
+    std::vector<PoseScan> opt_rel_trans_;
 
     // Robot's maximum likelihood pose estimate
     Eigen::Vector2f state_loc_;
@@ -121,6 +134,13 @@ class SLAM {
     // Voxel cube- can be made at construction time if the odom noise is the same throughout 
     // which we assume is true
     std::vector<Voxel> voxel_cube_;
+
+    // Factor graph container that contains relative successive poses ( read: the optimzed odom from aditional runs from CSM)
+    gtsam::NonlinearFactorGraph nlfg_;
+    
+    // Initial optimized value container of global pose from the first run of CSM 
+    gtsam::Values nlfg_init_;
+   
 };
 
 void GenerateRaster( const std::vector<Eigen::Vector2f>& pcl,
@@ -141,5 +161,18 @@ double RasterWeighting( const Eigen::MatrixXf& raster,
                         const std::vector<Eigen::Vector2f>& point_cloud );
 
 }  // namespace slam
+
+void AddOdomFactor( const Eigen::Vector2f state_loc,
+                    const float state_angle , 
+                    const int index,
+                    gtsam::NonlinearFactorGraph* nlfg_ptr );
+
+void AddPoseInit( const Eigen::Vector2f state_loc,
+                  const float state_angle , 
+                  const int index,
+                  gtsam::Values* nlfg_init_ptr );
+
+void OptimizeGtsam( std::vector<slam::PoseScan> opt_rel_trans,
+                    gtsam::Values* nlfg_init_ptr );
 
 #endif   // SRC_SLAM_H_
