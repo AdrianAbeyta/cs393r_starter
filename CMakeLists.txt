@@ -37,6 +37,11 @@ ADD_LIBRARY(shared_library
 ADD_SUBDIRECTORY(src/shared)
 INCLUDE_DIRECTORIES(src/shared)
 INCLUDE_DIRECTORIES(src)
+INCLUDE_DIRECTORIES(/u/bore4622/usr/local/include)
+LINK_DIRECTORIES(/u/bore4622/usr/local/lib)
+INCLUDE_DIRECTORIES(/usr/include/eigen3)
+
+
 
 ROSBUILD_ADD_EXECUTABLE(slam
                         src/slam/slam_main.cc
