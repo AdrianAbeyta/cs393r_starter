@@ -207,16 +207,17 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
 
     // We use these as progress capture devices (read: keep most likely relative transform)
     Vector2f relative_loc( 0, 0 );
-    float relative_angle = 0.0;
-    float likelihood = 0.0;
+    float relative_angle = 0;
+    float likelihood = -1000000000;
 
     for(const auto& v: voxel_cube_)
     {
-     float raster_likelihood = RasterWeighting( raster_,
-                                                 resolution_,
-                                                 TransformPointCloud(pcl, 
-                                                                     (relative_loc_mle + v.delta_loc), 
-                                                                     (relative_angle_mle + v.delta_angle)) );
+     
+      double const raster_likelihood = RasterWeighting( raster_,
+                                                        resolution_,
+                                                        TransformPointCloud(pcl, 
+                                                                           (relative_loc_mle + v.delta_loc), 
+                                                                           (relative_angle_mle + v.delta_angle)) );
       if( likelihood < raster_likelihood )
       { 
         likelihood = raster_likelihood;
@@ -225,9 +226,15 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
       }
     }
 
+    // DELETE
+    // relative_loc = relative_loc_mle;
+    // relative_angle = relative_angle_mle;
+    // // DELETE
+    std::cout<< likelihood << " mle x: " << relative_loc_mle.x() << " opt x: " << relative_loc.x() << " mle y: " << relative_loc_mle.y() << " opt y: " << relative_loc.y()<< " mle a: " << relative_angle_mle << " opt a: " << relative_angle << std::endl;
+
     PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
                    map_pose_scan_.back().state_angle + relative_angle, 
-                   pcl  };
+                   pcl };
 
     map_pose_scan_.push_back( node );
 
@@ -362,15 +369,20 @@ void GenerateRaster( const vector<Vector2f>& pcl,
     for( int i=-(raster.rows()-1)/2; i<=(raster.rows()-1)/2; ++i )
     {
       // Make this loop a lambda+algorithm- hand rolled loops are bad!
-      raster(i+raster.rows()/2,j+raster.cols()/2.0) = 0.0;  
+      int const x = i+raster.rows()/2;
+      int const y = j+raster.cols()/2;
+      raster( x, y ) = -100000000;  
+
       for(const auto& p: pcl)
       { 
         Vector2f temp( i*resolution, j*resolution );
-        double const prob = exp( -0.5*(temp-p).norm()*(temp-p).norm()/(sensor_noise*sensor_noise) );
-        if( prob > raster( i+raster.rows()/2, j+raster.cols()/2.0 ))
+        double const prob = ( -0.5*(temp-p).norm()*(temp-p).norm()/(sensor_noise*sensor_noise) );
+        
+        if( prob > raster( x, y ))
         {
-          raster( i+raster.rows()/2, j+raster.cols()/2.0 ) = prob;
+          raster( x, y ) = prob;
         }
+
       }
     }
   }
