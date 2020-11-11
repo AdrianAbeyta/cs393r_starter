@@ -18,7 +18,8 @@
 \author  Joydeep Biswas, (C) 2019
 */
 //========================================================================
-
+#include <algorithm>
+#include <vector>
 #include <vector>
 #include <list> 
   
@@ -27,7 +28,11 @@
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
-
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/Geometry"
+#include "shared/math/line2d.h"
+#include "shared/util/random.h"
+#include "vector_map/vector_map.h"
 #include "amrl_msgs/VisualizationMsg.h"
 
 ////HELMS DEEP ADDITIONS////
@@ -203,7 +208,7 @@ class Navigation {
   
   // Run function call rate
   float const time_step_ = 1.0/20; // s
- 
+  vector_map::VectorMap map_;
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////

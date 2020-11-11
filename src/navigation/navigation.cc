@@ -18,7 +18,17 @@
 \author  Joydeep Biswas, (C) 2019
 */
 //========================================================================
-
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/Geometry"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+#include "shared/math/geometry.h"
+#include "shared/math/line2d.h"
+#include "shared/math/math_util.h"
+#include "shared/util/timer.h"
 #include "gflags/gflags.h"
 #include "eigen3/Eigen/Dense"
 #include "eigen3/Eigen/Geometry"
@@ -32,19 +42,23 @@
 #include "shared/ros/ros_helpers.h"
 #include "navigation.h"
 #include "visualization/visualization.h"
-
+#include "navigation/simple_queue.h"
+#include "vector_map/vector_map.h"
 using Eigen::Vector2f;
 using amrl_msgs::AckermannCurvatureDriveMsg;
 using amrl_msgs::VisualizationMsg;
 using std::string;
 using std::vector;
 
+using geometry::line2f;
 using amrl_msgs::ColoredArc2D;
 using amrl_msgs::ColoredLine2D;
 using amrl_msgs::ColoredPoint2D;
 using amrl_msgs::Pose2Df;
 using amrl_msgs::PathVisualization;
 using amrl_msgs::VisualizationMsg;
+
+using vector_map::VectorMap;
 
 using namespace math_util;
 using namespace ros_helpers;
@@ -86,6 +100,7 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
   fl_ = { length_-(length_-wheel_base_)/2, width_/2 }; // front left 
   bl_ = { -(length_-wheel_base_)/2, width_/2 }; // back left
 
+  map_ = VectorMap(map_file);
 
   GenerateCurvatureSamples();
 
@@ -103,9 +118,34 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
 }
 void Navigation::PopulateGrid(const int width, const int length, const float cell_side_length) {
 //Assume Grid is 250x250: Cell width is .4m
+  vector<vector<int>> occupancy_grid(width,vector<int>(length,0)); 
+  
 
+  for( size_t z = 0; z < map_.lines.size(); z++){ 
+    for (int i = 0; i < width; i++) { 
+      for (int j = 0; j < length; j++){
 
+        if(occupancy_grid[i][j] == 0){
+          line2f a(-50 + j*cell_side_length,50 - i*cell_side_length,-50 + (j+1)*cell_side_length, 50 - i*cell_side_length);   
+          line2f b(-50 + j*cell_side_length,50 - i*cell_side_length,-50 + (j)*cell_side_length, 50 - (i+1)*cell_side_length);
+          line2f c(-50 + j*cell_side_length,50 - (i+1)*cell_side_length,-50 + (j+1)*cell_side_length, 50 - (i+1)*cell_side_length);
+          line2f d(-50 + (j+1)*cell_side_length,50 - i*cell_side_length,-50 + (j+1)*cell_side_length, 50 - (i+1)*cell_side_length);
 
+          if(map_.lines[z].Intersects(a) || map_.lines[z].Intersects(b) || map_.lines[z].Intersects(c) ||map_.lines[z].Intersects(d)){
+            occupancy_grid[i][j] = 1;
+          }
+        }
+        
+      }  
+    } 
+  }
+  for (int i = 0; i < width; i++) { 
+      for (int j = 0; j < length; j++){
+        std::cout << occupancy_grid[i][j];
+      }
+      std::cout << std::endl;
+  }
+  
 return;
 }
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) { 
@@ -377,6 +417,7 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
+  PopulateGrid(250,250,0.4);
   if(!nav_complete_)
   {
     PathOption selected_path{path_options_[0].first};
