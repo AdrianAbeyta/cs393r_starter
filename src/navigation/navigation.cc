@@ -117,39 +117,43 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   
   vector<int> goal_cell{0,0};
   vector<int> current_cell{0,0};
-  vector<vector<int>> occupancy_grid_(250,vector<int>(250,0));
-  vector<vector<int>> breadcrumb_grid_(250,vector<int>(250,0));
+  vector<vector<int>> occupancy_grid_(cell_width,vector<int>(cell_length,0));
+  vector<vector<int>> breadcrumb_grid_(cell_width,vector<int>(cell_length,0));
   vector<vector<int>> path_;
   //const vector<vector<int>> walls = PopulateGrid(250,250,.4)
-  PopulateGrid(250,250,.4,occupancy_grid_);
+  PopulateGrid(&occupancy_grid_);
 
 
-  FindCell(250,250,.4,nav_goal_loc_,goal_cell);
+  FindCell(nav_goal_loc_,&goal_cell);
   //std::cout<< goal_cell[0]<<std::endl;
   //std::cout<< goal_cell[1]<<std::endl;
-  FindCell(250,250,.4,robot_loc_,current_cell);
+  FindCell(robot_loc_,&current_cell);           //TODO: Update with actual start location -setpose message
   //std::cout<< current_cell[0]<<std::endl;
   //std::cout<< current_cell[1]<<std::endl;
   BFS(goal_cell,current_cell,occupancy_grid_,breadcrumb_grid_,path_);    ///TODO: Generate vector<vector<int>> of ordered cell path and publish to visualization
-
-
+  for(auto& element: path_){
+    std::cout<<element[0] << ","<<element[1]<<std::endl;
+  }
+  //for(auto& element:path_){
+    //std::cout<< element[0] <<", "<<element[1]<<", ";
+  //}
+  //std::cout<<std::endl;
   nav_complete_ = 0;
-  
   return;
 }
-void Navigation::PopulateGrid(const int width, const int length, const float cell_side_length, vector<vector<int>>& grid) {
+void Navigation::PopulateGrid(vector<vector<int>>* grid_ptr) {
 //Assume Grid is 250x250: Cell width is .4m
-  //vector<vector<int>> occupancy_grid(width,vector<int>(length,0)); VESTIGE for reference
   
+  vector<vector<int>>& grid = *grid_ptr;
   for( size_t z = 0; z < map_.lines.size(); z++){ 
-    for (int i = 0; i < width; i++) { 
-      for (int j = 0; j < length; j++){
+    for (int i = 0; i < cell_width; i++) { 
+      for (int j = 0; j < cell_length; j++){
 
         if(grid[i][j] == 0){
-          line2f a(-50 + j*cell_side_length,50 - i*cell_side_length,-50 + (j+1)*cell_side_length, 50 - i*cell_side_length);   
-          line2f b(-50 + j*cell_side_length,50 - i*cell_side_length,-50 + (j)*cell_side_length, 50 - (i+1)*cell_side_length);
-          line2f c(-50 + j*cell_side_length,50 - (i+1)*cell_side_length,-50 + (j+1)*cell_side_length, 50 - (i+1)*cell_side_length);
-          line2f d(-50 + (j+1)*cell_side_length,50 - i*cell_side_length,-50 + (j+1)*cell_side_length, 50 - (i+1)*cell_side_length);
+          line2f a(-map_length/2 + j*cell_side_length, map_width/2 - i*cell_side_length, -map_length/2 + (j+1)*cell_side_length, map_width/2 - i*cell_side_length);   
+          line2f b(-map_length/2 + j*cell_side_length, map_width/2 - i*cell_side_length, -map_length/2 + (j)*cell_side_length, map_width/2 - (i+1)*cell_side_length);
+          line2f c(-map_length/2 + j*cell_side_length, map_width/2 - (i+1)*cell_side_length, -map_length/2 + (j+1)*cell_side_length, map_width/2 - (i+1)*cell_side_length);
+          line2f d(-map_length/2 + (j+1)*cell_side_length, map_width/2 - i*cell_side_length, -map_length/2 + (j+1)*cell_side_length, map_width/2 - (i+1)*cell_side_length);
 
           if(map_.lines[z].Intersects(a) || map_.lines[z].Intersects(b) || map_.lines[z].Intersects(c) ||map_.lines[z].Intersects(d)){
             grid[i][j] = -1;
@@ -162,11 +166,11 @@ void Navigation::PopulateGrid(const int width, const int length, const float cel
 return;
 }
 
-void Navigation::FindCell(const int width, const int length, const float cell_side_length,Vector2f coordinate,vector<int>& cell){         //TODO:Finished but need test
-
-for(int c = 0; c < length; c++){
-  const float a = -50 + c*cell_side_length;
-  const float b = -50 + (c+1)*cell_side_length;
+void Navigation::FindCell(const Vector2f coordinate,vector<int>* cell_ptr){         //TODO:Finished but need test
+vector<int>& cell = *cell_ptr;
+for(int c = 0; c < cell_length; c++){
+  const float a = -map_length/2 + c*cell_side_length;
+  const float b = -map_length/2 + (c+1)*cell_side_length;
   if(coordinate[0] >= a && coordinate[0] <b){
     cell[1] = c;
     goto column_found;
@@ -174,9 +178,9 @@ for(int c = 0; c < length; c++){
 }
 column_found:
 
-for(int r = 0; r < width; r++){
-  const float x = 50 - r*cell_side_length;
-  const float y = 50 - (r+1)*cell_side_length;
+for(int r = 0; r < cell_width; r++){
+  const float x = map_width/2 - r*cell_side_length;
+  const float y = map_width/2 - (r+1)*cell_side_length;
   if(coordinate[1] <= x && coordinate[1] >y){
     cell[0] = r;
     goto row_found;
@@ -186,18 +190,25 @@ row_found:
 return;
 }
 
-void Navigation::BFS(vector<int> goal,vector<int> current,vector<vector<int>> occupancy_grid_,vector<vector<int>>& breadcrumb_grid_,vector<vector<int>>& path_){         //TODO
+void Navigation::BFS(vector<int> goal, vector<int> current, vector<vector<int>> occupancy_grid_, vector<vector<int>>& breadcrumb_grid_, vector<vector<int>>& path_){         //TODO
   queue <vector<int>> frontier;
-  frontier.push(current); //Initialize queue with starting cell
-  breadcrumb_grid_[current[0]][current[1]]= -1;
+  frontier.push(current); //Initialize queue with starting cell----------------------------------------------------------------------
+  breadcrumb_grid_[current[0]][current[1]]= 1;
 
-  //Find neighbors algo
+  //Generate Breadcrumbs: Assume can travel along diagonals--------------------------------------------------------------------------
   while(frontier.empty() == false){
     vector<int> center_cell = frontier.front();
 
-    for(int r = center_cell[0]-1; r < center_cell[0] + 2;r++){
-      for(int c = center_cell[1]-1; c < center_cell[1] + 2;c++){
-        if(c < 250 && c >=0 && r < 250 && r >=0 && breadcrumb_grid_[r][c] == 0 && occupancy_grid_[r][c] != -1 ){
+    for(int r = center_cell[0]-1; r < center_cell[0] + 2; ++r){
+      for(int c = center_cell[1]-1; c < center_cell[1] + 2; ++c){
+        if(c < cell_length &&                                                 //TODO Turn If into function
+          c >=0 && 
+          r < cell_width &&
+          r >=0 && 
+          breadcrumb_grid_[r][c] == 0 && 
+          occupancy_grid_[r][c] != -1 )
+        {
+
           vector<int> valid{r,c};
           frontier.push(valid);
           breadcrumb_grid_[r][c] = 1 + breadcrumb_grid_[center_cell[0]][center_cell[1]];
@@ -206,15 +217,29 @@ void Navigation::BFS(vector<int> goal,vector<int> current,vector<vector<int>> oc
     }
     frontier.pop();
   }
+  // Populate optimal path from end to start-----------------------------------------------------------------------------------------
+  path_.push_back(goal);
+  vector<int> current_breadcrumb = goal;
 
+  while (current_breadcrumb[0] != current[0] || current_breadcrumb[1] != current[1]) {
+    for(int r = current_breadcrumb[0]-1; r < current_breadcrumb[0] + 2; ++r){
+      for(int c = current_breadcrumb[1]-1; c < current_breadcrumb[1] + 2; ++c){
+        if(c < cell_length && c >=0 && r < cell_width && r >=0 && occupancy_grid_[r][c] != -1 && breadcrumb_grid_[r][c] == breadcrumb_grid_[current_breadcrumb[0]][current_breadcrumb[1]] - 1 ){
+          vector<int> valid{r,c};
+          current_breadcrumb = valid;
+          path_.push_back(valid);
+          goto next;
+        }
+      }
+    }
+    next:;
+  }
   /*for(int i=0; i < 250;i++){
     for(int j=0; j < 250;j++){
       std::cout<< breadcrumb_grid_[i][j] << " ";
     }
     std::cout<<std::endl;
   }*/
-
-
 return;
 }
 
@@ -490,6 +515,11 @@ void Navigation::Run() {
   
   if(!nav_complete_)
   {
+    for(auto& element :path_){//----------------------------------------------------------------------------Visualize optimal path
+    Vector2f point (-map_length/2+cell_side_length*element[0],map_width/2-cell_side_length*element[1]);
+    visualization::DrawPoint(point, 0xC73EE6, local_viz_msg_);
+    }
+    //-------------------------------------------------------------------------------------------------------
     PathOption selected_path{path_options_[0].first};
     for(auto& path_option: path_options_)
     {

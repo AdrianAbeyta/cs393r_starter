@@ -129,8 +129,8 @@ class Navigation {
   void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop  );
 
 
-  void PopulateGrid(const int width, const int length, const float cell_side_length, std::vector<std::vector<int>>& grid);
-  void FindCell(const int width, const int length, const float cell_side_length,Eigen::Vector2f coordinate,std::vector<int>& cell);
+  void PopulateGrid(std::vector<std::vector<int>>* grid_ptr);
+  void FindCell(const Eigen::Vector2f coordinate, std::vector<int>* cell_ptr);
   void BFS(std::vector<int> goal,std::vector<int> current,std::vector<std::vector<int>> occupancy_grid_,std::vector<std::vector<int>>& breadcrumb_grid_,std::vector<std::vector<int>>& path_);
 
   Eigen::Vector2f BaseLinkPropagationStraight( const float& lookahead_distance ) const;
@@ -210,9 +210,21 @@ class Navigation {
   
   // Run function call rate
   float const time_step_ = 1.0/20; // s
+
+  //Global Planner
+  float const map_width = 100.0; //m
+  float const map_length = 100.0; //m
+  float const cell_side_length = .4; //m
+  int cell_width = map_width/cell_side_length;
+  int cell_length = map_length/cell_side_length;
+
+
+
   vector_map::VectorMap map_; //For reading map file
   std::vector<std::vector<int>> occupancy_grid_; //vector containing walls
   std::vector<std::vector<int>> breadcrumb_grid_; //vector 
+  std::vector<std::vector<int>> path_; //Optimal Path
+
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
