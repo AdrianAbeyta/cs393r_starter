@@ -102,7 +102,7 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   return;
 }
 void Navigation::PopulateGrid(const int width, const int length, const float cell_side_length) {
-//Assume Grid is 250x250
+//Assume Grid is 250x250: Cell width is .4m
 
 
 
@@ -395,7 +395,9 @@ void Navigation::Run() {
     
     TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
     viz_pub_.publish( local_viz_msg_ );
+    viz_pub_.publish( global_viz_msg_ );
     visualization::ClearVisualizationMsg( local_viz_msg_ );
+    visualization::ClearVisualizationMsg( global_viz_msg_ );
     
   }
   

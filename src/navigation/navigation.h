@@ -72,13 +72,7 @@ struct VehicleCorners{
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
-struct SimpleGraph {
-std::unordered_map<char, std::vector<char> > edges;
 
-std::vector<char> neighbors(char id) {
-return edges[id];
-}
-};
 class Navigation {
  public:
 
@@ -129,11 +123,15 @@ class Navigation {
   **/
   void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop  );
 
+
+  void PopulateGrid(const int width, const int length, const float cell_side_length);
+
   Eigen::Vector2f BaseLinkPropagationStraight( const float& lookahead_distance ) const;
   Eigen::Vector2f BaseLinkPropagationCurve( const float& theta, const float& curvature ) const; 
 
   bool PointInAreaOfInterestStraight(const Eigen::Vector2f point, const float& lookahead_distance ) const;
   bool PointInAreaOfInterestCurved(const Eigen::Vector2f& point, const float& theta, const Eigen::Vector2f& pole) const; 
+
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -205,7 +203,7 @@ class Navigation {
   
   // Run function call rate
   float const time_step_ = 1.0/20; // s
-  SimpleGraph Grid;
+ 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
