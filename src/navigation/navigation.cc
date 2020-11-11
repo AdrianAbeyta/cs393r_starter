@@ -39,6 +39,13 @@ using amrl_msgs::VisualizationMsg;
 using std::string;
 using std::vector;
 
+using amrl_msgs::ColoredArc2D;
+using amrl_msgs::ColoredLine2D;
+using amrl_msgs::ColoredPoint2D;
+using amrl_msgs::Pose2Df;
+using amrl_msgs::PathVisualization;
+using amrl_msgs::VisualizationMsg;
+
 using namespace math_util;
 using namespace ros_helpers;
 
@@ -94,7 +101,13 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   
   return;
 }
+void Navigation::PopulateGrid(const int width, const int length, const float cell_side_length) {
+//Assume Grid is 250x250
 
+
+
+return;
+}
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) { 
   return;
 }

@@ -72,6 +72,13 @@ struct VehicleCorners{
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
+struct SimpleGraph {
+std::unordered_map<char, std::vector<char> > edges;
+
+std::vector<char> neighbors(char id) {
+return edges[id];
+}
+};
 class Navigation {
  public:
 
@@ -198,6 +205,7 @@ class Navigation {
   
   // Run function call rate
   float const time_step_ = 1.0/20; // s
+  SimpleGraph Grid;
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
