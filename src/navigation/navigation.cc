@@ -111,43 +111,66 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
 void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   nav_goal_loc_ = loc;
   nav_goal_angle_ = angle;
+  
+  vector<int> goal_cell(0,0);
+  vector<int> current_cell(0,0);
+  vector<vector<int>> occupancy_grid_(250,vector<int>(250,0));
+  //const vector<vector<int>> walls = PopulateGrid(250,250,.4)
+  PopulateGrid(250,250,.4,occupancy_grid_);
+
+
+  FindCell(250,250,.4,nav_goal_loc_,goal_cell);
+  FindCell(250,250,.4,robot_loc_,current_cell);
+
+  BFS(goal_cell,current_cell,occupancy_grid_);    ///TODO: Generate vector<vector<int>> of ordered cell path and publish to visualization
+
 
   nav_complete_ = 0;
   
   return;
 }
-void Navigation::PopulateGrid(const int width, const int length, const float cell_side_length) {
+void Navigation::PopulateGrid(const int width, const int length, const float cell_side_length, vector<vector<int>>& grid) {
 //Assume Grid is 250x250: Cell width is .4m
-  vector<vector<int>> occupancy_grid(width,vector<int>(length,0)); 
+  //vector<vector<int>> occupancy_grid(width,vector<int>(length,0)); 
   
-
   for( size_t z = 0; z < map_.lines.size(); z++){ 
     for (int i = 0; i < width; i++) { 
       for (int j = 0; j < length; j++){
 
-        if(occupancy_grid[i][j] == 0){
+        if(grid[i][j] == 0){
           line2f a(-50 + j*cell_side_length,50 - i*cell_side_length,-50 + (j+1)*cell_side_length, 50 - i*cell_side_length);   
           line2f b(-50 + j*cell_side_length,50 - i*cell_side_length,-50 + (j)*cell_side_length, 50 - (i+1)*cell_side_length);
           line2f c(-50 + j*cell_side_length,50 - (i+1)*cell_side_length,-50 + (j+1)*cell_side_length, 50 - (i+1)*cell_side_length);
           line2f d(-50 + (j+1)*cell_side_length,50 - i*cell_side_length,-50 + (j+1)*cell_side_length, 50 - (i+1)*cell_side_length);
 
           if(map_.lines[z].Intersects(a) || map_.lines[z].Intersects(b) || map_.lines[z].Intersects(c) ||map_.lines[z].Intersects(d)){
-            occupancy_grid[i][j] = 1;
+            grid[i][j] = 1;
           }
         }
         
       }  
     } 
   }
-  for (int i = 0; i < width; i++) { 
-      for (int j = 0; j < length; j++){
-        std::cout << occupancy_grid[i][j];
-      }
-      std::cout << std::endl;
-  }
-  
 return;
 }
+
+void Navigation::FindCell(const int width, const int length, const float cell_side_length,Vector2f coordinate,vector<int>& cell){         //TODO
+
+
+
+
+
+
+return;
+}
+
+void Navigation::BFS(vector<int> goal,vector<int> current,vector<vector<int>> occupancy_grid_){         //TODO
+
+
+
+return;
+}
+
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) { 
   return;
 }
@@ -417,7 +440,7 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  PopulateGrid(250,250,0.4);
+  
   if(!nav_complete_)
   {
     PathOption selected_path{path_options_[0].first};

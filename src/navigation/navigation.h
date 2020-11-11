@@ -129,7 +129,10 @@ class Navigation {
   void TOC( const float& curvature, const float& robot_velocity, const float& distance_to_local_goal, const float& distance_needed_to_stop  );
 
 
-  void PopulateGrid(const int width, const int length, const float cell_side_length);
+  void PopulateGrid(const int width, const int length, const float cell_side_length, std::vector<std::vector<int>>& grid);
+  void FindCell(const int width, const int length, const float cell_side_length,Eigen::Vector2f coordinate,std::vector<int>& cell);
+  void BFS(std::vector<int> goal,std::vector<int> current,std::vector<std::vector<int>> occupancy_grid_);
+
 
   Eigen::Vector2f BaseLinkPropagationStraight( const float& lookahead_distance ) const;
   Eigen::Vector2f BaseLinkPropagationCurve( const float& theta, const float& curvature ) const; 
@@ -208,7 +211,8 @@ class Navigation {
   
   // Run function call rate
   float const time_step_ = 1.0/20; // s
-  vector_map::VectorMap map_;
+  vector_map::VectorMap map_; //For reading map file
+  std::vector<std::vector<int>> occupancy_grid_; //vector containing walls
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
