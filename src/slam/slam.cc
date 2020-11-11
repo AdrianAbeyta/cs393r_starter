@@ -230,7 +230,7 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
     // relative_loc = relative_loc_mle;
     // relative_angle = relative_angle_mle;
     // // DELETE
-    std::cout<< likelihood << " mle x: " << relative_loc_mle.x() << " opt x: " << relative_loc.x() << " mle y: " << relative_loc_mle.y() << " opt y: " << relative_loc.y()<< " mle a: " << relative_angle_mle << " opt a: " << relative_angle << std::endl;
+    //std::cout<< likelihood << " mle x: " << relative_loc_mle.x() << " opt x: " << relative_loc.x() << " mle y: " << relative_loc_mle.y() << " opt y: " << relative_loc.y()<< " mle a: " << relative_angle_mle << " opt a: " << relative_angle << std::endl;
 
     PoseScan node{ map_pose_scan_.back().state_loc + relative_loc, 
                    map_pose_scan_.back().state_angle + relative_angle, 
