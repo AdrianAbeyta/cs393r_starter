@@ -43,12 +43,15 @@
 #include "navigation.h"
 #include "visualization/visualization.h"
 #include "navigation/simple_queue.h"
+#include <queue>
 #include "vector_map/vector_map.h"
+
 using Eigen::Vector2f;
 using amrl_msgs::AckermannCurvatureDriveMsg;
 using amrl_msgs::VisualizationMsg;
 using std::string;
 using std::vector;
+using std::queue;
 
 using geometry::line2f;
 using amrl_msgs::ColoredArc2D;
@@ -112,17 +115,22 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   nav_goal_loc_ = loc;
   nav_goal_angle_ = angle;
   
-  vector<int> goal_cell(0,0);
-  vector<int> current_cell(0,0);
+  vector<int> goal_cell{0,0};
+  vector<int> current_cell{0,0};
   vector<vector<int>> occupancy_grid_(250,vector<int>(250,0));
+  vector<vector<int>> breadcrumb_grid_(250,vector<int>(250,0));
+  vector<vector<int>> path_;
   //const vector<vector<int>> walls = PopulateGrid(250,250,.4)
   PopulateGrid(250,250,.4,occupancy_grid_);
 
 
   FindCell(250,250,.4,nav_goal_loc_,goal_cell);
+  //std::cout<< goal_cell[0]<<std::endl;
+  //std::cout<< goal_cell[1]<<std::endl;
   FindCell(250,250,.4,robot_loc_,current_cell);
-
-  BFS(goal_cell,current_cell,occupancy_grid_);    ///TODO: Generate vector<vector<int>> of ordered cell path and publish to visualization
+  //std::cout<< current_cell[0]<<std::endl;
+  //std::cout<< current_cell[1]<<std::endl;
+  BFS(goal_cell,current_cell,occupancy_grid_,breadcrumb_grid_,path_);    ///TODO: Generate vector<vector<int>> of ordered cell path and publish to visualization
 
 
   nav_complete_ = 0;
@@ -131,7 +139,7 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
 }
 void Navigation::PopulateGrid(const int width, const int length, const float cell_side_length, vector<vector<int>>& grid) {
 //Assume Grid is 250x250: Cell width is .4m
-  //vector<vector<int>> occupancy_grid(width,vector<int>(length,0)); 
+  //vector<vector<int>> occupancy_grid(width,vector<int>(length,0)); VESTIGE for reference
   
   for( size_t z = 0; z < map_.lines.size(); z++){ 
     for (int i = 0; i < width; i++) { 
@@ -144,7 +152,7 @@ void Navigation::PopulateGrid(const int width, const int length, const float cel
           line2f d(-50 + (j+1)*cell_side_length,50 - i*cell_side_length,-50 + (j+1)*cell_side_length, 50 - (i+1)*cell_side_length);
 
           if(map_.lines[z].Intersects(a) || map_.lines[z].Intersects(b) || map_.lines[z].Intersects(c) ||map_.lines[z].Intersects(d)){
-            grid[i][j] = 1;
+            grid[i][j] = -1;
           }
         }
         
@@ -154,18 +162,57 @@ void Navigation::PopulateGrid(const int width, const int length, const float cel
 return;
 }
 
-void Navigation::FindCell(const int width, const int length, const float cell_side_length,Vector2f coordinate,vector<int>& cell){         //TODO
+void Navigation::FindCell(const int width, const int length, const float cell_side_length,Vector2f coordinate,vector<int>& cell){         //TODO:Finished but need test
 
+for(int c = 0; c < length; c++){
+  const float a = -50 + c*cell_side_length;
+  const float b = -50 + (c+1)*cell_side_length;
+  if(coordinate[0] >= a && coordinate[0] <b){
+    cell[1] = c;
+    goto column_found;
+  }
+}
+column_found:
 
-
-
-
-
+for(int r = 0; r < width; r++){
+  const float x = 50 - r*cell_side_length;
+  const float y = 50 - (r+1)*cell_side_length;
+  if(coordinate[1] <= x && coordinate[1] >y){
+    cell[0] = r;
+    goto row_found;
+  }
+}
+row_found:
 return;
 }
 
-void Navigation::BFS(vector<int> goal,vector<int> current,vector<vector<int>> occupancy_grid_){         //TODO
+void Navigation::BFS(vector<int> goal,vector<int> current,vector<vector<int>> occupancy_grid_,vector<vector<int>>& breadcrumb_grid_,vector<vector<int>>& path_){         //TODO
+  queue <vector<int>> frontier;
+  frontier.push(current); //Initialize queue with starting cell
+  breadcrumb_grid_[current[0]][current[1]]= -1;
 
+  //Find neighbors algo
+  while(frontier.empty() == false){
+    vector<int> center_cell = frontier.front();
+
+    for(int r = center_cell[0]-1; r < center_cell[0] + 2;r++){
+      for(int c = center_cell[1]-1; c < center_cell[1] + 2;c++){
+        if(c < 250 && c >=0 && r < 250 && r >=0 && breadcrumb_grid_[r][c] == 0 && occupancy_grid_[r][c] != -1 ){
+          vector<int> valid{r,c};
+          frontier.push(valid);
+          breadcrumb_grid_[r][c] = 1 + breadcrumb_grid_[center_cell[0]][center_cell[1]];
+        }
+      }
+    }
+    frontier.pop();
+  }
+
+  /*for(int i=0; i < 250;i++){
+    for(int j=0; j < 250;j++){
+      std::cout<< breadcrumb_grid_[i][j] << " ";
+    }
+    std::cout<<std::endl;
+  }*/
 
 
 return;
