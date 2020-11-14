@@ -32,6 +32,7 @@
 #include "shared/ros/ros_helpers.h"
 #include "navigation.h"
 #include "visualization/visualization.h"
+#include "simple_queue.h"
 
 using Eigen::Vector2f;
 using amrl_msgs::AckermannCurvatureDriveMsg;
@@ -92,10 +93,26 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
 
   nav_complete_ = 0;
   
+  //Eigen::Vector2f coord{0,0};
+  std::pair<int,int> coord{0,0};
+  //std::cout << CellToCoord(1, 0) << std::endl;
+  //std::cout << CoordToCell(coord).first << "," << CoordToCell(coord).second << std::endl;
+  //int id = 1;
+  //std::cout << CellToID( coord ) << std::endl;
+  //std::cout << IDToCell(id).first << "," << IDToCell(id).second << std::endl;
+  
+
+  path_.clear();
+
+  // MakePlan( robot_loc_ , nav_goal_loc_ , &path_ );
+
   return;
 }
 
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) { 
+  robot_loc_ = loc;
+  robot_angle_ = angle ;
+
   return;
 }
 
@@ -168,15 +185,15 @@ void Navigation::ObservePointCloud( const vector<Vector2f>& point_cloud,double t
     {
       if( Collision(collision_set, corners ) )
       {
-        visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
-        visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
-        visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
+        //visualization::DrawLine(corners.fr, corners.fl, 255, local_viz_msg_ );
+        //visualization::DrawLine(corners.fr, corners.br, 255, local_viz_msg_ );
+        //visualization::DrawLine(corners.fl, corners.bl, 255, local_viz_msg_ );
         path_option.first.free_path_length = (index-1) * lookahead_distance_/arc_samples_;
         break;  // If there is a collision then break, because we dont need to look any further
       }else{
-        visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
-        visualization::DrawLine(corners.fr, corners.br, 0, local_viz_msg_ );
-        visualization::DrawLine(corners.fl, corners.bl, 0, local_viz_msg_ );
+        //visualization::DrawLine(corners.fr, corners.fl, 0, local_viz_msg_ );
+        //visualization::DrawLine(corners.fr, corners.br, 0, local_viz_msg_ );
+        //visualization::DrawLine(corners.fl, corners.bl, 0, local_viz_msg_ );
       }
       ++index;
     }
@@ -411,6 +428,73 @@ bool Collision(const vector<Vector2f>& obstacle_set, const VehicleCorners& recta
   return 0;
 }
 // Milestone 3 will complete the rest of navigation.
+
+// Accepts a grid cell row and colum (cell) this function will output its map frame coordnate (x, y) (m)
+Vector2f  Navigation::CellToCoord( const int col , const int row )
+{
+  Vector2f coord{col*res_, row*res_};
+
+  return coord +  grid_offset_ ;
+}
+
+
+// Accepts a map frame coordnate (x, y) (m) this function will output a grid cell row and colum (cell)  
+std::pair< int, int > Navigation::CoordToCell( Eigen::Vector2f coord )
+{
+  coord -= grid_offset_;
+
+  const int row = coord.y()/res_;
+  const int col = coord.x()/res_;
+
+  return std::make_pair( row, col ); 
+}
+
+// Accepts a grid cell row and colum (cell) returns a node_ID 
+int Navigation::CellToID( std::pair< int, int > cell )
+{
+  return cols_*cell.first + cell.second;
+}
+
+// Accepts a node_ID and returns a grid cell row and colum (cell)
+std::pair< int, int >Navigation::IDToCell( int ID )
+{
+  int row = (ID%cols_);
+  int col = (ID)/cols_;
+
+  return std::make_pair( row, col ); 
+}
+
+// void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr)
+// {
+//   if( !path_ptr )
+//   {
+//     std::cout<<"MakePlan was passed a nullptr! What the hell man...\n";
+//     return;
+//   }
+//   // came_from
+//   std::vector<std::pair< int, int >> &path = *path_ptr;
+
+//   // Construct the priority queue, to use uint64_t to represent node ID, and float as the priority type.
+//   SimpleQueue<uint64_t, float> queue;
+//   std::pair< int, int >start_location = CoordToCell(robot_loc_); 
+//   vector<int> cost ();
+
+//   while (! queue.Empty)
+//   {
+//     if robot_loc_ == nav_goal_loc_
+//     {
+
+//     }
+    
+//   }
+
+
+
+
+
+//  return; 
+//}
+
 
 
 }  // namespace navigation

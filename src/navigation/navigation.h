@@ -128,6 +128,25 @@ class Navigation {
   bool PointInAreaOfInterestStraight(const Eigen::Vector2f point, const float& lookahead_distance ) const;
   bool PointInAreaOfInterestCurved(const Eigen::Vector2f& point, const float& theta, const Eigen::Vector2f& pole) const; 
 
+
+  // GLOBAL NAV FUNC //
+
+  Eigen::Vector2f CellToCoord( const int col , const int row );
+
+  // Returns a (row,col) pair 
+  std::pair< int, int > CoordToCell( Eigen::Vector2f coord );
+
+  // Returns node ID
+  int CellToID( std::pair< int, int > cell );
+
+  // Returns node ID
+  std::pair< int, int >IDToCell( int ID );
+
+  // Exicutes A* 
+  void MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr);
+  
+  int MinDistance (int dist[], bool sptSet[]);
+
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -198,6 +217,18 @@ class Navigation {
   
   // Run function call rate
   float const time_step_ = 1.0/20; // s
+  
+  // GLOBAL NAV PARAM // 
+
+  int const rows_ = 3; 
+  int const cols_ = 3; 
+
+  float const res_ = 1; // m/cell
+
+  Eigen::Vector2f grid_offset_ {0,0} ; 
+
+  std::vector<std::pair< int, int >> path_;
+
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
