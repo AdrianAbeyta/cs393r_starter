@@ -33,6 +33,8 @@
 #include "navigation.h"
 #include "visualization/visualization.h"
 #include "simple_queue.h"
+#include "shared/math/geometry.h"
+#include "vector_map/vector_map.h"
 
 using Eigen::Vector2f;
 using amrl_msgs::AckermannCurvatureDriveMsg;
@@ -83,8 +85,9 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
 
   GenerateCurvatureSamples();
 
+  map_ = vector_map::VectorMap("maps/"+ map_file +".txt");
+
   
-  //TODO check that car dimensions are logical
 }
 
 void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
@@ -430,16 +433,16 @@ bool Collision(const vector<Vector2f>& obstacle_set, const VehicleCorners& recta
 // Milestone 3 will complete the rest of navigation.
 
 // Accepts a grid cell row and colum (cell) this function will output its map frame coordnate (x, y) (m)
-Vector2f  Navigation::CellToCoord( const int col , const int row )
+Vector2f  Navigation::CellToCoord( std::pair< int, int > cell ) const
 {
-  Vector2f coord{col*res_, row*res_};
+  Vector2f coord{cell.second*res_, cell.first*res_};
 
   return coord +  grid_offset_ ;
 }
 
 
 // Accepts a map frame coordnate (x, y) (m) this function will output a grid cell row and colum (cell)  
-std::pair< int, int > Navigation::CoordToCell( Eigen::Vector2f coord )
+std::pair< int, int > Navigation::CoordToCell( Eigen::Vector2f coord ) const
 {
   coord -= grid_offset_;
 
@@ -450,50 +453,143 @@ std::pair< int, int > Navigation::CoordToCell( Eigen::Vector2f coord )
 }
 
 // Accepts a grid cell row and colum (cell) returns a node_ID 
-int Navigation::CellToID( std::pair< int, int > cell )
+int Navigation::CellToID( std::pair< int, int > cell ) const
 {
   return cols_*cell.first + cell.second;
 }
 
 // Accepts a node_ID and returns a grid cell row and colum (cell)
-std::pair< int, int >Navigation::IDToCell( int ID )
+std::pair< int, int >Navigation::IDToCell( int ID ) const
 {
-  int row = (ID%cols_);
-  int col = (ID)/cols_;
+  int row = ID/cols_;
+  int col = ID%cols_;
 
   return std::make_pair( row, col ); 
 }
 
-// void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr)
-// {
-//   if( !path_ptr )
-//   {
-//     std::cout<<"MakePlan was passed a nullptr! What the hell man...\n";
-//     return;
-//   }
-//   // came_from
-//   std::vector<std::pair< int, int >> &path = *path_ptr;
+// https://stackoverflow.com/questions/43816484/finding-the-neighbors-of-2d-array
+bool Navigation::InGrid( int row, int col ) const
+{
+  //Return false if row and col are negative
+  if( row < 0 || 
+      col < 0 ) 
+  {
+    return false;  
+  }
+  
+  //Return false if values are greater than given grid.
+  if( row >= rows_ || 
+      col >= cols_ )
+  {
+    return false;    
+  }
 
-//   // Construct the priority queue, to use uint64_t to represent node ID, and float as the priority type.
-//   SimpleQueue<uint64_t, float> queue;
-//   std::pair< int, int >start_location = CoordToCell(robot_loc_); 
-//   vector<int> cost ();
+  return true;
+}
 
-//   while (! queue.Empty)
-//   {
-//     if robot_loc_ == nav_goal_loc_
-//     {
 
-//     }
+std::vector<std::pair< int, int >> Navigation::FindValidNeighboors( std::pair<int,int> cell) const
+{
+  std::vector<std::pair< int, int >> valid_neighboors;
+  // Find all surrounding cells by adding +/- 1 to col and row 
+  for ( int col = cell.second-1; col <= cell.second+1; ++col)
+  {
+    for ( int row = cell.first-1; row <= cell.first+1; ++row)
+    {
+      // If the cell given is not center and its within the grid.
+      if ( ! (col == cell.second) && 
+           ! (row == cell.first) &&
+           InGrid(row, col) )
+      {
+        std::pair< int, int > center{ cell.first, cell.second };
+        std::pair< int, int > neighboor{ row, col };
+        const geometry::line2f line_to_neighboor{ CellToCoord(center), CellToCoord(neighboor) };
+       
+        bool intersects = false;
+        
+        // Check if the line between center and neighboor intersects with map line.
+        for (size_t i = 0; i < map_.lines.size(); ++i)
+        {
+          intersects = map_.lines[i].Intersects( line_to_neighboor );
+          if( intersects == true )
+          {
+            break;
+          }
+        }
+
+        if( intersects == false )
+        {
+          valid_neighboors.push_back( neighboor );
+        }
+
+      }
+    }
+  }
+
+  return valid_neighboors;
+}
+
+
+
+void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr)
+{
+  if( !path_ptr )
+  {
+    std::cout<<"MakePlan was passed a nullptr! What the hell man...\n";
+    return;
+  }
+ 
+  // std::vector<std::pair< int, int >> &path = *path_ptr;
+
+  // SL is set to current robo_loc and converted into an ID
+  uint64_t start_ID = CellToID( CoordToCell(robot_loc_) );
+  uint64_t goal_ID = CellToID( CoordToCell(nav_goal_loc_) );
+
+  // Construct the priority queue, to use uint64_t to represent node ID, and float as the priority type.
+  SimpleQueue<uint64_t, float> frontier;
+  frontier.Push( start_ID, 0 );
+ 
+  // Key: Parent Cell --- Value: Child Cell
+  std::map< uint64_t, uint64_t >came_from{ {start_ID, start_ID} }; 
+  
+  // Key: Cell --- Value: Cost
+  std::map< uint64_t, double >cost_so_far{ {start_ID, 0.0} };
+
+
+  while( !frontier.Empty() )
+  {
+    uint64_t current_ID = frontier.Pop();
     
-//   }
+    if( current_ID == goal_ID )
+    {
+      break;
+    }
 
+    std::vector<std::pair< int, int >> valid_neighboors = FindValidNeighboors( IDToCell(current_ID) );
+    
+    for( const auto& valid_neighboor: valid_neighboors )
+    {
+      float const new_cost = cost_so_far.at( current_ID ) + ( CellToCoord(IDToCell(current_ID)) - CellToCoord(valid_neighboor) ).norm();
 
+      uint64_t valid_neighboor_ID = CellToID( valid_neighboor );
 
+      if( cost_so_far.find( valid_neighboor_ID ) != cost_so_far.end() ||
+          new_cost < cost_so_far.at( valid_neighboor_ID ) )
+      {
+        cost_so_far[valid_neighboor_ID] = new_cost;
 
+        float priority = new_cost + ( CellToCoord(IDToCell(goal_ID)) - CellToCoord(valid_neighboor) ).norm();
+        
+        frontier.Push( valid_neighboor_ID, priority );
 
-//  return; 
-//}
+        came_from[valid_neighboor_ID] = current_ID;
+      }
+
+    }
+  }
+
+  return; 
+}
 
 
 

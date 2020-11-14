@@ -29,7 +29,7 @@
 ////HELMS DEEP ADDITIONS////
 
 #include "amrl_msgs/VisualizationMsg.h"
-
+#include "vector_map/vector_map.h"
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
 ////HELMS DEEP ADDITIONS////
@@ -131,22 +131,25 @@ class Navigation {
 
   // GLOBAL NAV FUNC //
 
-  Eigen::Vector2f CellToCoord( const int col , const int row );
+  Eigen::Vector2f CellToCoord( std::pair< int, int > cell ) const;
 
   // Returns a (row,col) pair 
-  std::pair< int, int > CoordToCell( Eigen::Vector2f coord );
+  std::pair< int, int > CoordToCell( Eigen::Vector2f coord ) const;
 
   // Returns node ID
-  int CellToID( std::pair< int, int > cell );
+  int CellToID( std::pair< int, int > cell ) const;
 
   // Returns node ID
-  std::pair< int, int >IDToCell( int ID );
+  std::pair< int, int >IDToCell( int ID ) const;
+
+  //Finds neigbors and checks to see if cell is already occupied (wall)
+  std::vector<std::pair< int, int >>FindValidNeighboors( std::pair<int,int> cell) const;
+  bool InGrid( int col, int row ) const;
+
 
   // Exicutes A* 
-  void MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr);
+  void MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr );
   
-  int MinDistance (int dist[], bool sptSet[]);
-
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -228,6 +231,9 @@ class Navigation {
   Eigen::Vector2f grid_offset_ {0,0} ; 
 
   std::vector<std::pair< int, int >> path_;
+
+  // Map of the environment.
+  vector_map::VectorMap map_;
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
