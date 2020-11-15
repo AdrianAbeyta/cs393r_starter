@@ -605,10 +605,10 @@ if( !path_ptr )
   std::vector<std::pair< int, int >> &path = *path_ptr;
 
   // Visualize Start
-  visualization::DrawCross(start, .25, 255, local_viz_msg_ );
+  visualization::DrawCross( start, .25, 255, local_viz_msg_ );
   
   // Visualize Goal 
-  visualization::DrawCross(finish, .25, 0xadadad, local_viz_msg_ ); // Inflated x to make issue more apparent. 
+  visualization::DrawCross( finish, .25, 0xadadad, local_viz_msg_ ); // Inflated x to make issue more apparent. 
 
   // Itterate through path define parent child and viualize by converting cell to coordnate. 
   for ( std::size_t i=0; i<path.size()-1; ++i )  
