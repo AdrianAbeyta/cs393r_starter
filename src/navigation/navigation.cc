@@ -85,7 +85,7 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
 
   GenerateCurvatureSamples();
 
-  map_ = vector_map::VectorMap("maps/"+ map_file +".txt");
+  map_ = vector_map::VectorMap(map_file);
 
   
 }
@@ -93,11 +93,10 @@ Navigation::Navigation(const string& map_file, ros::NodeHandle* n) :
 void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   nav_goal_loc_ = loc;
   nav_goal_angle_ = angle;
-
   nav_complete_ = 0;
   
   //Eigen::Vector2f coord{0,0};
-  std::pair<int,int> coord{0,0};
+  //std::pair<int,int> coord{0,0};
   //std::cout << CellToCoord(1, 0) << std::endl;
   //std::cout << CoordToCell(coord).first << "," << CoordToCell(coord).second << std::endl;
   //int id = 1;
@@ -107,14 +106,13 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
 
   path_.clear();
 
-  // MakePlan( robot_loc_ , nav_goal_loc_ , &path_ );
-
+  
   return;
 }
 
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) { 
-  robot_loc_ = loc;
-  robot_angle_ = angle ;
+   //robot_loc_ = loc;
+   //robot_angle_ = angle ;
 
   return;
 }
@@ -384,27 +382,30 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  if(!nav_complete_)
-  {
-    PathOption selected_path{path_options_[0].first};
-    for(auto& path_option: path_options_)
-    {
-      path_option.first.cost = -3*path_option.first.free_path_length+0.5*(path_option.first.closest_point-carrot_stick_).norm()-0.5*path_option.first.clearance;
-      if(path_option.first.cost < selected_path.cost)
-      {
-        selected_path = path_option.first;
-      }
-    }
-    float const predicted_robot_vel = PredictedRobotVelocity();
-    float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
-    float const distance_needed_to_stop = 
-      (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
+  // if(!nav_complete_)
+  // {
+  //   PathOption selected_path{path_options_[0].first};
+  //   for(auto& path_option: path_options_)
+  //   {
+  //     path_option.first.cost = -3*path_option.first.free_path_length+0.5*(path_option.first.closest_point-carrot_stick_).norm()-0.5*path_option.first.clearance;
+  //     if(path_option.first.cost < selected_path.cost)
+  //     {
+  //       selected_path = path_option.first;
+  //     }
+  //   }
+  //   float const predicted_robot_vel = PredictedRobotVelocity();
+  //   float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
+  //   float const distance_needed_to_stop = 
+  //     (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
     
-    TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );   
+  //   TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );
+
+    MakePlan( robot_loc_ , nav_goal_loc_ , &path_ );
+
     viz_pub_.publish( local_viz_msg_ );
     visualization::ClearVisualizationMsg( local_viz_msg_ );
     
-  }
+  //}
   
   return;
 }
@@ -539,11 +540,15 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
     return;
   }
  
-  // std::vector<std::pair< int, int >> &path = *path_ptr;
+  std::vector<std::pair< int, int >> &path = *path_ptr;
 
   // SL is set to current robo_loc and converted into an ID
-  uint64_t start_ID = CellToID( CoordToCell(robot_loc_) );
-  uint64_t goal_ID = CellToID( CoordToCell(nav_goal_loc_) );
+  uint64_t start_ID = CellToID( CoordToCell(start) );
+  visualization::DrawCross(start, .25, 255, local_viz_msg_ );
+
+  uint64_t goal_ID = CellToID( CoordToCell(finish) );
+  visualization::DrawCross(finish, .25, 0xadadad, local_viz_msg_ );
+
 
   // Construct the priority queue, to use uint64_t to represent node ID, and float as the priority type.
   SimpleQueue<uint64_t, float> frontier;
@@ -551,7 +556,7 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
  
   // Key: Parent Cell --- Value: Child Cell
   std::map< uint64_t, uint64_t >came_from{ {start_ID, start_ID} }; 
-  
+
   // Key: Cell --- Value: Cost
   std::map< uint64_t, double >cost_so_far{ {start_ID, 0.0} };
 
@@ -560,11 +565,14 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
   {
     uint64_t current_ID = frontier.Pop();
     
+    // Collect the best choice path given current location? 
+    path.push_back(IDToCell(current_ID));
+
     if( current_ID == goal_ID )
     {
       break;
     }
-
+    
     std::vector<std::pair< int, int >> valid_neighboors = FindValidNeighboors( IDToCell(current_ID) );
     
     for( const auto& valid_neighboor: valid_neighboors )
@@ -574,7 +582,7 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
       uint64_t valid_neighboor_ID = CellToID( valid_neighboor );
 
       if( cost_so_far.find( valid_neighboor_ID ) != cost_so_far.end() ||
-          new_cost < cost_so_far.at( valid_neighboor_ID ) )
+          new_cost < cost_so_far[valid_neighboor_ID] )
       {
         cost_so_far[valid_neighboor_ID] = new_cost;
 
@@ -584,14 +592,10 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
 
         came_from[valid_neighboor_ID] = current_ID;
       }
-
     }
-  }
-
+  } 
   return; 
 }
-
-
 
 }  // namespace navigation
 

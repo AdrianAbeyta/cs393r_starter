@@ -223,10 +223,10 @@ class Navigation {
   
   // GLOBAL NAV PARAM // 
 
-  int const rows_ = 3; 
-  int const cols_ = 3; 
+  int const rows_ = 250; 
+  int const cols_ = 250; 
 
-  float const res_ = 1; // m/cell
+  float const res_ = 0.25; // m/cell
 
   Eigen::Vector2f grid_offset_ {0,0} ; 
 
