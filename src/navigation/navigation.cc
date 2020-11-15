@@ -547,7 +547,7 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
   visualization::DrawCross(start, .25, 255, local_viz_msg_ );
 
   uint64_t goal_ID = CellToID( CoordToCell(finish) );
-  visualization::DrawCross(finish, .25, 0xadadad, local_viz_msg_ );
+  visualization::DrawCross(finish, 3, 0xadadad, local_viz_msg_ ); // Inflated x to make issue more apparent. 
 
 
   // Construct the priority queue, to use uint64_t to represent node ID, and float as the priority type.
