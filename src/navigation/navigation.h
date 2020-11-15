@@ -146,9 +146,10 @@ class Navigation {
   std::vector<std::pair< int, int >>FindValidNeighboors( std::pair<int,int> cell) const;
   bool InGrid( int col, int row ) const;
 
+  void VisualizePath( Eigen::Vector2f start, Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr );
 
   // Exicutes A* 
-  void MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr );
+  void MakePlan( Eigen::Vector2f start, Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr );
   
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////

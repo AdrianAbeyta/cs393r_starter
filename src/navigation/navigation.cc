@@ -400,7 +400,8 @@ void Navigation::Run() {
     
   //   TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );
 
-    MakePlan( robot_loc_ , nav_goal_loc_ , &path_ );
+    MakePlan( robot_loc_, nav_goal_loc_, &path_ );
+    VisualizePath( robot_loc_, nav_goal_loc_, &path_ );
 
     viz_pub_.publish( local_viz_msg_ );
     visualization::ClearVisualizationMsg( local_viz_msg_ );
@@ -544,12 +545,7 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
 
   // SL is set to current robo_loc and converted into an ID
   uint64_t start_ID = CellToID( CoordToCell(start) );
-  visualization::DrawCross(start, .25, 255, local_viz_msg_ );
-
   uint64_t goal_ID = CellToID( CoordToCell(finish) );
-  visualization::DrawCross(finish, 3, 0xadadad, local_viz_msg_ ); // Inflated x to make issue more apparent. 
-
-
   // Construct the priority queue, to use uint64_t to represent node ID, and float as the priority type.
   SimpleQueue<uint64_t, float> frontier;
   frontier.Push( start_ID, 0 );
@@ -565,7 +561,7 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
   {
     uint64_t current_ID = frontier.Pop();
     
-    // Collect the best choice path given current location? 
+    // Collect the best choice cell that was just poped from queue????? 
     path.push_back(IDToCell(current_ID));
 
     if( current_ID == goal_ID )
@@ -593,10 +589,40 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
         came_from[valid_neighboor_ID] = current_ID;
       }
     }
-  } 
+  }
   return; 
 }
 
+void Navigation::VisualizePath( Eigen::Vector2f start, Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr )
+{
+
+if( !path_ptr )
+  {
+    std::cout<<"MakePlan was passed a nullptr! What the hell man...\n";
+    return;
+  }
+ 
+  std::vector<std::pair< int, int >> &path = *path_ptr;
+
+  // Visualize Start
+  visualization::DrawCross(start, .25, 255, local_viz_msg_ );
+  
+  // Visualize Goal 
+  visualization::DrawCross(finish, .25, 0xadadad, local_viz_msg_ ); // Inflated x to make issue more apparent. 
+
+  // Itterate through path define parent child and viualize by converting cell to coordnate. 
+  for ( std::size_t i=0; i<path.size()-1; ++i )  
+  {
+    std::pair< int, int > parent_cell = path[i];
+    std::pair< int, int > child_cell = path[i+1];
+
+    visualization::DrawLine( CellToCoord(parent_cell), CellToCoord(child_cell), 0xadadad, local_viz_msg_ );
+  }
+
+  return;
+}
+
+  
 }  // namespace navigation
 
 
