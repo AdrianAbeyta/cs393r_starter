@@ -146,7 +146,7 @@ class Navigation {
   std::vector<std::pair< int, int >>FindValidNeighboors( std::pair<int,int> cell) const;
   bool InGrid( int col, int row ) const;
 
-  void VisualizePath( Eigen::Vector2f start, Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr );
+  void VisualizePath( const Eigen::Vector2f start, const Eigen::Vector2f finish, const std::vector<std::pair< int, int >> path );
 
   // Exicutes A* 
   void MakePlan( Eigen::Vector2f start, Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr );
@@ -224,12 +224,12 @@ class Navigation {
   
   // GLOBAL NAV PARAM // 
 
-  int const rows_ = 250; 
-  int const cols_ = 250; 
+  int const rows_ = 500; 
+  int const cols_ = 500; 
 
-  float const res_ = 0.25; // m/cell
+  float const res_ = 0.5; // m/cell
 
-  Eigen::Vector2f grid_offset_ {0,0} ; 
+  Eigen::Vector2f grid_offset_ { -150, -150 } ; 
 
   std::vector<std::pair< int, int >> path_;
 

@@ -95,24 +95,18 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   nav_goal_angle_ = angle;
   nav_complete_ = 0;
   
-  //Eigen::Vector2f coord{0,0};
-  //std::pair<int,int> coord{0,0};
-  //std::cout << CellToCoord(1, 0) << std::endl;
-  //std::cout << CoordToCell(coord).first << "," << CoordToCell(coord).second << std::endl;
-  //int id = 1;
-  //std::cout << CellToID( coord ) << std::endl;
-  //std::cout << IDToCell(id).first << "," << IDToCell(id).second << std::endl;
-  
-
   path_.clear();
 
+  
+  MakePlan( robot_loc_, nav_goal_loc_, &path_ );
+  VisualizePath( robot_loc_, nav_goal_loc_, path_ );
   
   return;
 }
 
 void Navigation::UpdateLocation(const Eigen::Vector2f& loc, float angle) { 
-   //robot_loc_ = loc;
-   //robot_angle_ = angle ;
+   robot_loc_ = loc;
+   robot_angle_ = angle ;
 
   return;
 }
@@ -400,9 +394,8 @@ void Navigation::Run() {
     
   //   TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );
 
-    MakePlan( robot_loc_, nav_goal_loc_, &path_ );
-    VisualizePath( robot_loc_, nav_goal_loc_, &path_ );
-
+    
+    viz_pub_.publish( global_viz_msg_ );
     viz_pub_.publish( local_viz_msg_ );
     visualization::ClearVisualizationMsg( local_viz_msg_ );
     
@@ -492,17 +485,24 @@ bool Navigation::InGrid( int row, int col ) const
 
 std::vector<std::pair< int, int >> Navigation::FindValidNeighboors( std::pair<int,int> cell) const
 {
+  //std::cout << " We want the neighboors of this cell " << cell.first << std::endl;
+  //std::cout << " We want the neighboors of this cell " << cell.second << std::endl;
+
   std::vector<std::pair< int, int >> valid_neighboors;
   // Find all surrounding cells by adding +/- 1 to col and row 
   for ( int col = cell.second-1; col <= cell.second+1; ++col)
   {
+    //std::cout << "Itterating over col " << col <<std::endl;
+   
     for ( int row = cell.first-1; row <= cell.first+1; ++row)
     {
+      //std::cout << "Itterating over row " << row <<std::endl;
       // If the cell given is not center and its within the grid.
       if ( ! (col == cell.second) && 
            ! (row == cell.first) &&
            InGrid(row, col) )
       {
+        //std::cout << " cell is not center cell and its in grid!" <<std::endl;
         std::pair< int, int > center{ cell.first, cell.second };
         std::pair< int, int > neighboor{ row, col };
         const geometry::line2f line_to_neighboor{ CellToCoord(center), CellToCoord(neighboor) };
@@ -545,43 +545,42 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
 
   // SL is set to current robo_loc and converted into an ID
   uint64_t start_ID = CellToID( CoordToCell(start) );
+  //path.push_back( IDToCell(start_ID) );
   uint64_t goal_ID = CellToID( CoordToCell(finish) );
   // Construct the priority queue, to use uint64_t to represent node ID, and float as the priority type.
   SimpleQueue<uint64_t, float> frontier;
   frontier.Push( start_ID, 0 );
- 
+  //std::cout << " This is our startID currently: " << IDToCell(start_ID).first << "," << IDToCell(start_ID).second <<std::endl;
   // Key: Parent Cell --- Value: Child Cell
   std::map< uint64_t, uint64_t >came_from{ {start_ID, start_ID} }; 
 
   // Key: Cell --- Value: Cost
   std::map< uint64_t, double >cost_so_far{ {start_ID, 0.0} };
 
-
+  
   while( !frontier.Empty() )
   {
-    uint64_t current_ID = frontier.Pop();
     
-    // Collect the best choice cell that was just poped from queue????? 
-    path.push_back(IDToCell(current_ID));
+    uint64_t current_ID = frontier.Pop();
 
     if( current_ID == goal_ID )
     {
+      std::cout << "Found Path!" << std::endl;
       break;
     }
-    
     std::vector<std::pair< int, int >> valid_neighboors = FindValidNeighboors( IDToCell(current_ID) );
-    
     for( const auto& valid_neighboor: valid_neighboors )
     {
+      
       float const new_cost = cost_so_far.at( current_ID ) + ( CellToCoord(IDToCell(current_ID)) - CellToCoord(valid_neighboor) ).norm();
-
       uint64_t valid_neighboor_ID = CellToID( valid_neighboor );
-
-      if( cost_so_far.find( valid_neighboor_ID ) != cost_so_far.end() ||
-          new_cost < cost_so_far[valid_neighboor_ID] )
+      //std::cout << " Valid Neigbors Avialable " << valid_neighboors.size() <<std::endl;
+      
+      if( cost_so_far.find( valid_neighboor_ID ) == cost_so_far.end() ||
+          new_cost < cost_so_far.at(valid_neighboor_ID) )
       {
         cost_so_far[valid_neighboor_ID] = new_cost;
-
+        //std::cout << " Cost So Far " << new_cost <<std::endl;
         float priority = new_cost + ( CellToCoord(IDToCell(goal_ID)) - CellToCoord(valid_neighboor) ).norm();
         
         frontier.Push( valid_neighboor_ID, priority );
@@ -590,33 +589,44 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
       }
     }
   }
+
+  // for( auto& pair: came_from)
+  // {
+  //   path.push_back(IDToCell(pair.first));
+  //   path.push_back(IDToCell(pair.second));
+  // }
+
+  path.push_back( IDToCell(goal_ID) );
+
+  while( path.end()->first != IDToCell(start_ID).first &&
+         path.end()->second != IDToCell(start_ID).second )
+  {
+    //std::cout << path.size() <<std::endl;
+    path.push_back( IDToCell(came_from.at(CellToID(*path.end()))) );
+
+  }
+
+
   return; 
 }
 
-void Navigation::VisualizePath( Eigen::Vector2f start, Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr )
+void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector2f finish, std::vector<std::pair< int, int >> path )
 {
-
-if( !path_ptr )
-  {
-    std::cout<<"MakePlan was passed a nullptr! What the hell man...\n";
-    return;
-  }
- 
-  std::vector<std::pair< int, int >> &path = *path_ptr;
-
   // Visualize Start
-  visualization::DrawCross( start, .25, 255, local_viz_msg_ );
+  visualization::DrawCross( start, .25, 255, global_viz_msg_ );
   
   // Visualize Goal 
-  visualization::DrawCross( finish, .25, 0xadadad, local_viz_msg_ ); // Inflated x to make issue more apparent. 
+  visualization::DrawCross( finish, .25, 255, global_viz_msg_ ); // Inflated x to make issue more apparent. 
 
+  reverse(path.begin(), path.end());
+  //std::cout << path.size() << "path size" << std::endl;
   // Itterate through path define parent child and viualize by converting cell to coordnate. 
   for ( std::size_t i=0; i<path.size()-1; ++i )  
   {
     std::pair< int, int > parent_cell = path[i];
     std::pair< int, int > child_cell = path[i+1];
 
-    visualization::DrawLine( CellToCoord(parent_cell), CellToCoord(child_cell), 0xadadad, local_viz_msg_ );
+    visualization::DrawLine( CellToCoord(child_cell), CellToCoord(parent_cell), 0xadadad, global_viz_msg_ );
   }
 
   return;
