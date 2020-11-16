@@ -545,12 +545,12 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
 
   // SL is set to current robo_loc and converted into an ID
   uint64_t start_ID = CellToID( CoordToCell(start) );
-  //path.push_back( IDToCell(start_ID) );
   uint64_t goal_ID = CellToID( CoordToCell(finish) );
+
   // Construct the priority queue, to use uint64_t to represent node ID, and float as the priority type.
   SimpleQueue<uint64_t, float> frontier;
   frontier.Push( start_ID, 0 );
-  //std::cout << " This is our startID currently: " << IDToCell(start_ID).first << "," << IDToCell(start_ID).second <<std::endl;
+  
   // Key: Parent Cell --- Value: Child Cell
   std::map< uint64_t, uint64_t >came_from{ {start_ID, start_ID} }; 
 
@@ -560,9 +560,8 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
   
   while( !frontier.Empty() )
   {
-    
     uint64_t current_ID = frontier.Pop();
-
+    
     if( current_ID == goal_ID )
     {
       std::cout << "Found Path!" << std::endl;
@@ -574,38 +573,26 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
       
       float const new_cost = cost_so_far.at( current_ID ) + ( CellToCoord(IDToCell(current_ID)) - CellToCoord(valid_neighboor) ).norm();
       uint64_t valid_neighboor_ID = CellToID( valid_neighboor );
-      //std::cout << " Valid Neigbors Avialable " << valid_neighboors.size() <<std::endl;
       
       if( cost_so_far.find( valid_neighboor_ID ) == cost_so_far.end() ||
-          new_cost < cost_so_far.at(valid_neighboor_ID) )
+          new_cost < cost_so_far.at(valid_neighboor_ID)  )
       {
         cost_so_far[valid_neighboor_ID] = new_cost;
-        //std::cout << " Cost So Far " << new_cost <<std::endl;
+      
         float priority = new_cost + ( CellToCoord(IDToCell(goal_ID)) - CellToCoord(valid_neighboor) ).norm();
         
         frontier.Push( valid_neighboor_ID, priority );
-
         came_from[valid_neighboor_ID] = current_ID;
       }
     }
   }
-
-  // for( auto& pair: came_from)
-  // {
-  //   path.push_back(IDToCell(pair.first));
-  //   path.push_back(IDToCell(pair.second));
-  // }
-
-  path.push_back( IDToCell(goal_ID) );
-
-  while( path.end()->first != IDToCell(start_ID).first &&
-         path.end()->second != IDToCell(start_ID).second )
+  
+  uint64_t current = goal_ID;
+  while( current != start_ID ) 
   {
-    //std::cout << path.size() <<std::endl;
-    path.push_back( IDToCell(came_from.at(CellToID(*path.end()))) );
-
+    path.push_back( IDToCell(current) );
+    current = came_from[current];
   }
-
 
   return; 
 }
@@ -618,8 +605,8 @@ void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector
   // Visualize Goal 
   visualization::DrawCross( finish, .25, 255, global_viz_msg_ ); // Inflated x to make issue more apparent. 
 
-  reverse(path.begin(), path.end());
-  //std::cout << path.size() << "path size" << std::endl;
+  reverse( path.begin(), path.end() );
+
   // Itterate through path define parent child and viualize by converting cell to coordnate. 
   for ( std::size_t i=0; i<path.size()-1; ++i )  
   {

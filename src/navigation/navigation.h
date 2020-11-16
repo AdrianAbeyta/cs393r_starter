@@ -224,12 +224,12 @@ class Navigation {
   
   // GLOBAL NAV PARAM // 
 
-  int const rows_ = 500; 
-  int const cols_ = 500; 
+  int const rows_ = 300; 
+  int const cols_ = 300; 
 
   float const res_ = 0.5; // m/cell
 
-  Eigen::Vector2f grid_offset_ { -150, -150 } ; 
+  Eigen::Vector2f grid_offset_ { -75, -75 } ; 
 
   std::vector<std::pair< int, int >> path_;
 
