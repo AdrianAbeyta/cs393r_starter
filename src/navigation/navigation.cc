@@ -96,9 +96,9 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   nav_complete_ = 0;
   
   path_.clear();
-
-  
   MakePlan( robot_loc_, nav_goal_loc_, &path_ );
+
+  visualization::ClearVisualizationMsg( global_viz_msg_ );
   VisualizePath( robot_loc_, nav_goal_loc_, path_ );
   
   return;
@@ -394,11 +394,11 @@ void Navigation::Run() {
     
   //   TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );
 
-    
+    //visualization::ClearVisualizationMsg( local_viz_msg_ );
+    //visualization::ClearVisualizationMsg( global_viz_msg_ );
+
     viz_pub_.publish( global_viz_msg_ );
     viz_pub_.publish( local_viz_msg_ );
-    visualization::ClearVisualizationMsg( local_viz_msg_ );
-    
   //}
   
   return;
@@ -485,22 +485,15 @@ bool Navigation::InGrid( int row, int col ) const
 
 std::vector<std::pair< int, int >> Navigation::FindValidNeighboors( std::pair<int,int> cell) const
 {
-  //std::cout << " We want the neighboors of this cell " << cell.first << std::endl;
-  //std::cout << " We want the neighboors of this cell " << cell.second << std::endl;
-
   std::vector<std::pair< int, int >> valid_neighboors;
   // Find all surrounding cells by adding +/- 1 to col and row 
   for ( int col = cell.second-1; col <= cell.second+1; ++col)
   {
-    //std::cout << "Itterating over col " << col <<std::endl;
-   
     for ( int row = cell.first-1; row <= cell.first+1; ++row)
     {
-      //std::cout << "Itterating over row " << row <<std::endl;
       // If the cell given is not center and its within the grid.
-      if ( ! (col == cell.second) && 
-           ! (row == cell.first) &&
-           InGrid(row, col) )
+      if ( !((col == cell.second) && (row == cell.first)) &&
+              InGrid(row, col) )
       {
         //std::cout << " cell is not center cell and its in grid!" <<std::endl;
         std::pair< int, int > center{ cell.first, cell.second };
@@ -569,9 +562,8 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
     }
     std::vector<std::pair< int, int >> valid_neighboors = FindValidNeighboors( IDToCell(current_ID) );
     for( const auto& valid_neighboor: valid_neighboors )
-    {
-      
-      float const new_cost = cost_so_far.at( current_ID ) + ( CellToCoord(IDToCell(current_ID)) - CellToCoord(valid_neighboor) ).norm();
+    { 
+      float const new_cost = cost_so_far.at( current_ID ) + ( CellToCoord(IDToCell(current_ID)) - CellToCoord( valid_neighboor) ).norm();
       uint64_t valid_neighboor_ID = CellToID( valid_neighboor );
       
       if( cost_so_far.find( valid_neighboor_ID ) == cost_so_far.end() ||
@@ -580,7 +572,7 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
         cost_so_far[valid_neighboor_ID] = new_cost;
       
         float priority = new_cost + ( CellToCoord(IDToCell(goal_ID)) - CellToCoord(valid_neighboor) ).norm();
-        
+
         frontier.Push( valid_neighboor_ID, priority );
         came_from[valid_neighboor_ID] = current_ID;
       }
@@ -593,7 +585,6 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
     path.push_back( IDToCell(current) );
     current = came_from[current];
   }
-
   return; 
 }
 
@@ -619,7 +610,6 @@ void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector
   return;
 }
 
-  
 }  // namespace navigation
 
 

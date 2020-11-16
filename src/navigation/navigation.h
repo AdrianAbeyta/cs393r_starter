@@ -148,6 +148,7 @@ class Navigation {
 
   void VisualizePath( const Eigen::Vector2f start, const Eigen::Vector2f finish, const std::vector<std::pair< int, int >> path );
 
+
   // Exicutes A* 
   void MakePlan( Eigen::Vector2f start, Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr );
   
@@ -224,12 +225,12 @@ class Navigation {
   
   // GLOBAL NAV PARAM // 
 
-  int const rows_ = 300; 
-  int const cols_ = 300; 
+  int const rows_ = 1000; 
+  int const cols_ = 1000; 
 
-  float const res_ = 0.5; // m/cell
+  float const res_ = 0.25; // m/cell
 
-  Eigen::Vector2f grid_offset_ { -75, -75 } ; 
+  Eigen::Vector2f grid_offset_ { -50, -50 } ; 
 
   std::vector<std::pair< int, int >> path_;
 
