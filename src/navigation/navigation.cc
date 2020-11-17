@@ -604,7 +604,7 @@ void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector
     std::pair< int, int > parent_cell = path[i];
     std::pair< int, int > child_cell = path[i+1];
 
-    visualization::DrawLine( CellToCoord(child_cell), CellToCoord(parent_cell), 0xadadad, global_viz_msg_ );
+    visualization::DrawLine( CellToCoord(child_cell), CellToCoord(parent_cell), 0x0000FF, global_viz_msg_ );
   }
 
   return;
