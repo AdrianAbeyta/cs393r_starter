@@ -99,7 +99,7 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   MakePlan( robot_loc_, nav_goal_loc_, &path_ );
 
   visualization::ClearVisualizationMsg( global_viz_msg_ );
-  VisualizePath( robot_loc_, nav_goal_loc_, path_ );
+  //VisualizePath( robot_loc_, nav_goal_loc_, path_ );
   
   return;
 }
@@ -376,36 +376,45 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  // if(!nav_complete_)
-  // {
-  //   PathOption selected_path{path_options_[0].first};
-  //   for(auto& path_option: path_options_)
-  //   {
-  //     path_option.first.cost = -3*path_option.first.free_path_length+0.5*(path_option.first.closest_point-carrot_stick_).norm()-0.5*path_option.first.clearance;
-  //     if(path_option.first.cost < selected_path.cost)
-  //     {
-  //       selected_path = path_option.first;
-  //     }
-  //   }
-  //   float const predicted_robot_vel = PredictedRobotVelocity();
-  //   float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
-  //   float const distance_needed_to_stop = 
-  //     (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
+  
+  if( !nav_complete_ )
+  {
+    //Eigen::Vector2f carrot= {4,7};
+    //GetCarrot( &carrot_ );
+
+    //TODO: Check if car needs to plan a new nabigation path based on its previous plan and current location. 
     
-  //   TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );
 
-    //visualization::ClearVisualizationMsg( local_viz_msg_ );
-    //visualization::ClearVisualizationMsg( global_viz_msg_ );
+    PathOption selected_path{path_options_[0].first}; 
+    for( auto& path_option: path_options_ )
+    {
+      GetCarrot( &carrot_ );
+      std::cout << "carrot stick is: " << carrot_[0] << "," << carrot_[1] << std::endl;
+      visualization::ClearVisualizationMsg( local_viz_msg_ );
+      VisualizePath( robot_loc_, nav_goal_loc_, path_ );
+      visualization::DrawPoint( carrot_, 255, local_viz_msg_ ); 
 
+      // -3*path_option.first.free_path_length+ // -0.5*path_option.first.clearance;
+      path_option.first.cost = -3*path_option.first.free_path_length+0.5*(path_option.first.closest_point - carrot_).norm()-0.5*path_option.first.clearance ;
+      
+       if(path_option.first.cost < selected_path.cost)
+       {
+         selected_path = path_option.first;
+       }
+    }
+
+    float const predicted_robot_vel = PredictedRobotVelocity();
+    float const distance_to_local_goal = fabs(odom_loc_[0]-nav_goal_loc_[0]);
+    float const distance_needed_to_stop = 
+    (predicted_robot_vel*predicted_robot_vel)/(2*-min_acceleration_) + predicted_robot_vel*actuation_lag_time_.nsec/1e9; //dnts = dynamic distance + lag time distance
+    
+    TOC(selected_path.curvature, predicted_robot_vel, distance_to_local_goal, distance_needed_to_stop );
     viz_pub_.publish( global_viz_msg_ );
     viz_pub_.publish( local_viz_msg_ );
-  //}
+  }
   
   return;
 }
-
-
-
 
 // Create Helper functions here
 // Milestone 1 will fill out part of this class.
@@ -497,15 +506,26 @@ std::vector<std::pair< int, int >> Navigation::FindValidNeighboors( std::pair<in
       {
         //std::cout << " cell is not center cell and its in grid!" <<std::endl;
         std::pair< int, int > center{ cell.first, cell.second };
+
+        //std::pair< int, int > center_inflate{ cell.first+(res_*0.5), cell.second+(res_*0.5) };
+        
         std::pair< int, int > neighboor{ row, col };
         const geometry::line2f line_to_neighboor{ CellToCoord(center), CellToCoord(neighboor) };
-       
-        bool intersects = false;
         
+        // Inflate lines top and bottom.
+        //const geometry::line2f line_to_neighboor_inflate{ CellToCoord(center_inflate), CellToCoord(neighboor) };
+        
+        
+        bool intersects = false;
+        //bool intersects_top = false;
+        
+
         // Check if the line between center and neighboor intersects with map line.
         for (size_t i = 0; i < map_.lines.size(); ++i)
         {
           intersects = map_.lines[i].Intersects( line_to_neighboor );
+          //intersects_top = map_.lines[i].Intersects( line_to_neighboor_inflate_up );
+
           if( intersects == true )
           {
             break;
@@ -585,18 +605,17 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
     path.push_back( IDToCell(current) );
     current = came_from[current];
   }
+  reverse( path.begin(), path.end() );
   return; 
 }
 
 void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector2f finish, std::vector<std::pair< int, int >> path )
 {
   // Visualize Start
-  visualization::DrawCross( start, .25, 255, global_viz_msg_ );
+  //visualization::DrawCross( start, .25, 255, global_viz_msg_ );
   
   // Visualize Goal 
   visualization::DrawCross( finish, .25, 255, global_viz_msg_ ); // Inflated x to make issue more apparent. 
-
-  reverse( path.begin(), path.end() );
 
   // Itterate through path define parent child and viualize by converting cell to coordnate. 
   for ( std::size_t i=0; i<path.size()-1; ++i )  
@@ -604,14 +623,40 @@ void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector
     std::pair< int, int > parent_cell = path[i];
     std::pair< int, int > child_cell = path[i+1];
 
-    visualization::DrawLine( CellToCoord(child_cell), CellToCoord(parent_cell), 0x0000FF, global_viz_msg_ );
+    visualization::DrawLine( CellToCoord(child_cell), CellToCoord(parent_cell), 0xCB00FF, global_viz_msg_ );
   }
 
   return;
 }
 
+ void Navigation::GetCarrot( Eigen::Vector2f* carrot_ptr )
+  {
+    if( !carrot_ptr )
+    {
+    std::cout<<"GetCarrot was passed a nullptr! What the hell man...\n";
+    return;
+    }
+
+    Eigen::Vector2f &carrot = *carrot_ptr;
+    int circumference = 2*M_PI*radius_;
+
+      for( const auto& node:path_ )
+      {
+        // Calculate distance between center of the circle and the given node.
+        double dist_cent_to_node = ( robot_loc_-(CellToCoord(node)) ).norm();
+        //double dist_cent_to_endgoal = ( robot_loc_- nav_goal_loc_ ).norm();
+        //double dist_node_to_endgoal = ( CellToCoord(node) - nav_goal_loc_ ).norm();
+
+        if( dist_cent_to_node > circumference && 
+            dist_cent_to_node-circumference <= res_ )
+        {
+            Eigen::Vector2f Loc_C = nav_goal_loc_ - CellToCoord(node);
+            carrot={ Loc_C }; 
+        }
+      }
+    return;
+  }
+
 }  // namespace navigation
 
-
-
-
+//dist_node_to_endgoal > dist_cent_to_endgoal

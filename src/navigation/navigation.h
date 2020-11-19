@@ -148,10 +148,12 @@ class Navigation {
 
   void VisualizePath( const Eigen::Vector2f start, const Eigen::Vector2f finish, const std::vector<std::pair< int, int >> path );
 
-
   // Exicutes A* 
   void MakePlan( Eigen::Vector2f start, Eigen::Vector2f finish, std::vector<std::pair< int, int >>* path_ptr );
   
+  // Update carrot location based on path given. 
+  void GetCarrot( Eigen::Vector2f* carrot_ptr );
+
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -185,9 +187,9 @@ class Navigation {
   float const nav_goal_angle_tol_ = 0.1; // rad
 
   // Max velocity
-  float const max_velocity_ = 1.0; // m/s
+  float const max_velocity_ = 0.5; // m/s
   // Max acceleration
-  float const max_acceleration_ = 4.0; // m/s2
+  float const max_acceleration_ = 3.0; // m/s2
   // Max deceleration
   float const min_acceleration_ = -4.0; // m/s2
    // Command history
@@ -217,9 +219,6 @@ class Navigation {
   int const arc_samples_ = 5;
   float const lookahead_distance_ = 2.0;
 
-  // carrot
-  Eigen::Vector2f const carrot_stick_{4,0}; //m
-  
   // Run function call rate
   float const time_step_ = 1.0/20; // s
   
@@ -228,7 +227,7 @@ class Navigation {
   int const rows_ = 1000; 
   int const cols_ = 1000; 
 
-  float const res_ = 0.25; // m/cell
+  float const res_ = 0.3; // m/cell
 
   Eigen::Vector2f grid_offset_ { -50, -50 } ; 
 
@@ -236,6 +235,12 @@ class Navigation {
 
   // Map of the environment.
   vector_map::VectorMap map_;
+
+  // Dynamic carrot stick calulated at each timestep. 
+  Eigen::Vector2f carrot_; // m
+
+  // Radius used for carrot planner. 
+  float radius_ = 1; // m 
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
