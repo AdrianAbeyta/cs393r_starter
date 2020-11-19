@@ -36,14 +36,14 @@
 #include "vector_map/vector_map.h"
 
 // GTSam includes.
-#include "gtsam/geometry/Pose2.h"
-#include "gtsam/inference/Key.h"
-#include "gtsam/slam/BetweenFactor.h"
-#include "gtsam/nonlinear/NonlinearFactorGraph.h"
-#include "gtsam/nonlinear/GaussNewtonOptimizer.h"
-#include "gtsam/nonlinear/Marginals.h"
-#include "gtsam/nonlinear/Values.h"
-#include <gtsam/slam/PriorFactor.h>
+// #include "gtsam/geometry/Pose2.h"
+// #include "gtsam/inference/Key.h"
+// #include "gtsam/slam/BetweenFactor.h"
+// #include "gtsam/nonlinear/NonlinearFactorGraph.h"
+// #include "gtsam/nonlinear/GaussNewtonOptimizer.h"
+// #include "gtsam/nonlinear/Marginals.h"
+// #include "gtsam/nonlinear/Values.h"
+// #include <gtsam/slam/PriorFactor.h>
 
 using namespace math_util;
 using Eigen::Affine2f;
@@ -180,10 +180,10 @@ void SLAM::ObserveLaser( const vector<float>& ranges,
   {
     
     // Collect global pose information from the first run of CSM 
-    AddPoseInit(  map_pose_scan_.back().state_loc,
-                  map_pose_scan_.back().state_angle,
-                  map_pose_scan_.size(),
-                  &nlfg_init_ );
+    // AddPoseInit(  map_pose_scan_.back().state_loc,
+    //               map_pose_scan_.back().state_angle,
+    //               map_pose_scan_.size(),
+    //               &nlfg_init_ );
 
 
     // This is the raster for the scan at our last update. The goal is to maximize the correlation between
@@ -463,19 +463,19 @@ double RasterWeighting( const MatrixXf& raster,
 
 }  // namespace slam
 
-void AddPoseInit( const Eigen::Vector2f state_loc,
-                  const float state_angle ,
-                  const int index,
-                  gtsam::Values* nlfg_init_ptr )
-{
-   if( !nlfg_init_ptr )
-  {
-    std::cout<<"AddPoseInit() was passed a nullptr! What the hell man...\n";
-    return;
-  }
+// void AddPoseInit( const Eigen::Vector2f state_loc,
+//                   const float state_angle ,
+//                   const int index,
+//                   gtsam::Values* nlfg_init_ptr )
+// {
+//    if( !nlfg_init_ptr )
+//   {
+//     std::cout<<"AddPoseInit() was passed a nullptr! What the hell man...\n";
+//     return;
+//   }
   
-  gtsam::Values& nlfg_init = *nlfg_init_ptr;
+//   gtsam::Values& nlfg_init = *nlfg_init_ptr;
   
-  nlfg_init.insert( index, gtsam::Pose2(state_loc[0], state_loc[1], state_angle));
-  //nlfg_init.print("\nInitial Estimate:\n"); // print
-}
+//   nlfg_init.insert( index, gtsam::Pose2(state_loc[0], state_loc[1], state_angle));
+//   //nlfg_init.print("\nInitial Estimate:\n"); // print
+// }

@@ -377,25 +377,25 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 
 void Navigation::Run() {
   
+  GetCarrot( &carrot_ );
+
   if( !nav_complete_ )
   {
-    //Eigen::Vector2f carrot= {4,7};
-    //GetCarrot( &carrot_ );
 
+    //Eigen::Vector2f carrot= {4,7};
+    //std::cout << "carrot stick is: " << carrot_[0] << "," << carrot_[1] << std::endl;
+    visualization::ClearVisualizationMsg( local_viz_msg_ );
+    VisualizePath( robot_loc_, nav_goal_loc_, path_ );
+    //visualization::DrawPoint( carrot_, 255, global_viz_msg_ ); 
+    visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
     //TODO: Check if car needs to plan a new nabigation path based on its previous plan and current location. 
     
-
     PathOption selected_path{path_options_[0].first}; 
     for( auto& path_option: path_options_ )
     {
-      GetCarrot( &carrot_ );
-      std::cout << "carrot stick is: " << carrot_[0] << "," << carrot_[1] << std::endl;
-      visualization::ClearVisualizationMsg( local_viz_msg_ );
-      VisualizePath( robot_loc_, nav_goal_loc_, path_ );
-      visualization::DrawPoint( carrot_, 255, local_viz_msg_ ); 
-
+  
       // -3*path_option.first.free_path_length+ // -0.5*path_option.first.clearance;
-      path_option.first.cost = -3*path_option.first.free_path_length+0.5*(path_option.first.closest_point - carrot_).norm()-0.5*path_option.first.clearance ;
+      path_option.first.cost = 0.5*(path_option.first.closest_point - carrot_).norm();
       
        if(path_option.first.cost < selected_path.cost)
        {
@@ -637,21 +637,24 @@ void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector
     return;
     }
 
-    Eigen::Vector2f &carrot = *carrot_ptr;
-    int circumference = 2*M_PI*radius_;
+     Eigen::Vector2f &carrot = *carrot_ptr;
+     double circumference = 2*M_PI*radius_;
 
       for( const auto& node:path_ )
       {
+
         // Calculate distance between center of the circle and the given node.
         double dist_cent_to_node = ( robot_loc_-(CellToCoord(node)) ).norm();
-        //double dist_cent_to_endgoal = ( robot_loc_- nav_goal_loc_ ).norm();
-        //double dist_node_to_endgoal = ( CellToCoord(node) - nav_goal_loc_ ).norm();
+        double dist_cent_to_endgoal = ( robot_loc_- nav_goal_loc_ ).norm();
+        double dist_node_to_endgoal = ( CellToCoord(node) - nav_goal_loc_ ).norm();
 
         if( dist_cent_to_node > circumference && 
-            dist_cent_to_node-circumference <= res_ )
+            dist_cent_to_node-circumference <= res_ &&
+            dist_node_to_endgoal < dist_cent_to_endgoal )
         {
-            Eigen::Vector2f Loc_C = nav_goal_loc_ - CellToCoord(node);
-            carrot={ Loc_C }; 
+            Eigen::Rotation2Df rot( nav_goal_angle_ );
+            Eigen::Vector2f node_to_bl = rot*CellToCoord(node) - robot_loc_;
+            carrot={ node_to_bl };  
         }
       }
     return;

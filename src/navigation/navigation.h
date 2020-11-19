@@ -227,7 +227,7 @@ class Navigation {
   int const rows_ = 1000; 
   int const cols_ = 1000; 
 
-  float const res_ = 0.3; // m/cell
+  double const res_ = 0.3; // m/cell
 
   Eigen::Vector2f grid_offset_ { -50, -50 } ; 
 
@@ -240,7 +240,7 @@ class Navigation {
   Eigen::Vector2f carrot_; // m
 
   // Radius used for carrot planner. 
-  float radius_ = 1; // m 
+  double radius_ = .6; // m 
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////

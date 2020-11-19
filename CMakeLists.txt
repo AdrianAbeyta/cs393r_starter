@@ -46,7 +46,7 @@ INCLUDE_DIRECTORIES(/usr/include/eigen3)
 ROSBUILD_ADD_EXECUTABLE(slam
                         src/slam/slam_main.cc
                         src/slam/slam.cc)
-TARGET_LINK_LIBRARIES(slam shared_library ${libs} tbb gtsam)
+TARGET_LINK_LIBRARIES(slam shared_library ${libs}) 
 
 
 ROSBUILD_ADD_EXECUTABLE(particle_filter

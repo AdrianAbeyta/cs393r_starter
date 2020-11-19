@@ -20,13 +20,13 @@
 //========================================================================
 
 // GTSam includes.
-#include "gtsam/geometry/Pose2.h"
-#include "gtsam/inference/Key.h"
-#include "gtsam/slam/BetweenFactor.h"
-#include "gtsam/nonlinear/NonlinearFactorGraph.h"
-#include "gtsam/nonlinear/GaussNewtonOptimizer.h"
-#include "gtsam/nonlinear/Marginals.h"
-#include "gtsam/nonlinear/Values.h"
+// #include "gtsam/geometry/Pose2.h"
+// #include "gtsam/inference/Key.h"
+// #include "gtsam/slam/BetweenFactor.h"
+// #include "gtsam/nonlinear/NonlinearFactorGraph.h"
+// #include "gtsam/nonlinear/GaussNewtonOptimizer.h"
+// #include "gtsam/nonlinear/Marginals.h"
+// #include "gtsam/nonlinear/Values.h"
 #include <algorithm>
 #include <vector>
 
@@ -136,10 +136,10 @@ class SLAM {
     std::vector<Voxel> voxel_cube_;
 
     // Factor graph container that contains relative successive poses ( read: the optimzed odom from aditional runs from CSM)
-    gtsam::NonlinearFactorGraph nlfg_;
+    //gtsam::NonlinearFactorGraph nlfg_;
     
     // Initial optimized value container of global pose from the first run of CSM 
-    gtsam::Values nlfg_init_;
+    //gtsam::Values nlfg_init_;
    
 };
 
@@ -162,17 +162,17 @@ double RasterWeighting( const Eigen::MatrixXf& raster,
 
 }  // namespace slam
 
-void AddOdomFactor( const Eigen::Vector2f state_loc,
-                    const float state_angle , 
-                    const int index,
-                    gtsam::NonlinearFactorGraph* nlfg_ptr );
+// void AddOdomFactor( const Eigen::Vector2f state_loc,
+//                     const float state_angle , 
+//                     const int index,
+//                     gtsam::NonlinearFactorGraph* nlfg_ptr );
 
-void AddPoseInit( const Eigen::Vector2f state_loc,
-                  const float state_angle , 
-                  const int index,
-                  gtsam::Values* nlfg_init_ptr );
+// void AddPoseInit( const Eigen::Vector2f state_loc,
+//                   const float state_angle , 
+//                   const int index,
+//                   gtsam::Values* nlfg_init_ptr );
 
-void OptimizeGtsam( std::vector<slam::PoseScan> opt_rel_trans,
-                    gtsam::Values* nlfg_init_ptr );
+// void OptimizeGtsam( std::vector<slam::PoseScan> opt_rel_trans,
+//                     gtsam::Values* nlfg_init_ptr );
 
 #endif   // SRC_SLAM_H_
