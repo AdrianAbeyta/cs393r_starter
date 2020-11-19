@@ -154,6 +154,9 @@ class Navigation {
   // Update carrot location based on path given. 
   void GetCarrot( Eigen::Vector2f* carrot_ptr );
 
+  // Returns false if plan is no longer valid;
+  bool PathStillValid();
+
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////
@@ -227,7 +230,7 @@ class Navigation {
   int const rows_ = 1000; 
   int const cols_ = 1000; 
 
-  double const res_ = 0.3; // m/cell
+  double const res_ = 0.5; // m/cell
 
   Eigen::Vector2f grid_offset_ { -50, -50 } ; 
 
@@ -240,7 +243,13 @@ class Navigation {
   Eigen::Vector2f carrot_; // m
 
   // Radius used for carrot planner. 
-  double radius_ = .6; // m 
+  double radius_ = .5; // m 
+
+  // Inflation paramater for choosing valid nodes. 
+  const float tolerance_ = 0.8; // m 
+
+   // Inflation paramater for choosing valid nodes. 
+  const float path_deviation_limit_ = 0.5; // m 
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////

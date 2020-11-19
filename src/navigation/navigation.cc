@@ -97,6 +97,7 @@ void Navigation::SetNavGoal(const Vector2f& loc, float angle) {
   
   path_.clear();
   MakePlan( robot_loc_, nav_goal_loc_, &path_ );
+  GetCarrot( &carrot_ );
 
   visualization::ClearVisualizationMsg( global_viz_msg_ );
   //VisualizePath( robot_loc_, nav_goal_loc_, path_ );
@@ -376,26 +377,28 @@ void Navigation::TOC( const float& curvature, const float& robot_velocity, const
 }
 
 void Navigation::Run() {
-  
   GetCarrot( &carrot_ );
-
   if( !nav_complete_ )
   {
+    if( !PathStillValid() )
+    {
+      path_.clear();
+      visualization::ClearVisualizationMsg( global_viz_msg_ );
+      MakePlan( robot_loc_, nav_goal_loc_, &path_ ); 
+      GetCarrot( &carrot_ );
+      //visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
+    }
 
-    //Eigen::Vector2f carrot= {4,7};
-    //std::cout << "carrot stick is: " << carrot_[0] << "," << carrot_[1] << std::endl;
     visualization::ClearVisualizationMsg( local_viz_msg_ );
     VisualizePath( robot_loc_, nav_goal_loc_, path_ );
-    //visualization::DrawPoint( carrot_, 255, global_viz_msg_ ); 
     visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
-    //TODO: Check if car needs to plan a new nabigation path based on its previous plan and current location. 
+     
     
     PathOption selected_path{path_options_[0].first}; 
     for( auto& path_option: path_options_ )
     {
-  
-      // -3*path_option.first.free_path_length+ // -0.5*path_option.first.clearance;
-      path_option.first.cost = 0.5*(path_option.first.closest_point - carrot_).norm();
+      //-3*path_option.first.free_path_length+ //-0.5*path_option.first.clearance
+      path_option.first.cost = -6*path_option.first.free_path_length + 0.5*(path_option.first.closest_point - carrot_).norm() - 0.2*path_option.first.clearance;
       
        if(path_option.first.cost < selected_path.cost)
        {
@@ -505,34 +508,36 @@ std::vector<std::pair< int, int >> Navigation::FindValidNeighboors( std::pair<in
               InGrid(row, col) )
       {
         //std::cout << " cell is not center cell and its in grid!" <<std::endl;
-        std::pair< int, int > center{ cell.first, cell.second };
+        //std::pair< int, int > center{ cell.first, cell.second };
+        std::pair< int, int > center_inflate_top{ cell.first+(tolerance_), cell.second+(tolerance_)};
+        std::pair< int, int > center_inflate_bottom{ cell.first-(tolerance_), cell.second-(tolerance_)};
 
-        //std::pair< int, int > center_inflate{ cell.first+(res_*0.5), cell.second+(res_*0.5) };
-        
         std::pair< int, int > neighboor{ row, col };
-        const geometry::line2f line_to_neighboor{ CellToCoord(center), CellToCoord(neighboor) };
+        std::pair< int, int > neighboor_top{ row+(tolerance_), col+(tolerance_) };
+        std::pair< int, int > neighboor_bottom{ row-(tolerance_), col-(tolerance_) };
+
+       // const geometry::line2f line_to_neighboor{ CellToCoord(center), CellToCoord(neighboor) }; 
+        const geometry::line2f line_to_neighboor_up{ CellToCoord(center_inflate_top), CellToCoord(neighboor_top) };
+        const geometry::line2f line_to_neighboor_bottom{ CellToCoord(center_inflate_bottom), CellToCoord(neighboor_bottom) };
         
-        // Inflate lines top and bottom.
-        //const geometry::line2f line_to_neighboor_inflate{ CellToCoord(center_inflate), CellToCoord(neighboor) };
-        
-        
-        bool intersects = false;
-        //bool intersects_top = false;
-        
+        //bool intersects = false;
+        bool intersects_top = false;
+        bool intersects_bottom = false;
 
         // Check if the line between center and neighboor intersects with map line.
         for (size_t i = 0; i < map_.lines.size(); ++i)
         {
-          intersects = map_.lines[i].Intersects( line_to_neighboor );
-          //intersects_top = map_.lines[i].Intersects( line_to_neighboor_inflate_up );
+          //intersects = map_.lines[i].Intersects( line_to_neighboor );
+          intersects_top = map_.lines[i].Intersects( line_to_neighboor_up);
+          intersects_bottom = map_.lines[i].Intersects( line_to_neighboor_bottom);
 
-          if( intersects == true )
+          if( intersects_top == true || intersects_bottom == true )
           {
             break;
           }
         }
 
-        if( intersects == false )
+        if( intersects_top == false && intersects_bottom == false )
         {
           valid_neighboors.push_back( neighboor );
         }
@@ -639,27 +644,51 @@ void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector
 
      Eigen::Vector2f &carrot = *carrot_ptr;
      double circumference = 2*M_PI*radius_;
+     reverse( path_.end(), path_.begin() );
 
       for( const auto& node:path_ )
       {
+        
+          // Calculate distance between center of the circle and the given node.
+          double dist_cent_to_node = ( robot_loc_-(CellToCoord(node)) ).norm();
+          double dist_cent_to_endgoal = ( robot_loc_- nav_goal_loc_ ).norm();
+          double dist_node_to_endgoal = ( CellToCoord(node) - nav_goal_loc_ ).norm();
 
-        // Calculate distance between center of the circle and the given node.
-        double dist_cent_to_node = ( robot_loc_-(CellToCoord(node)) ).norm();
-        double dist_cent_to_endgoal = ( robot_loc_- nav_goal_loc_ ).norm();
-        double dist_node_to_endgoal = ( CellToCoord(node) - nav_goal_loc_ ).norm();
+          if( dist_cent_to_node-circumference < res_ &&
+              dist_node_to_endgoal < dist_cent_to_endgoal )
+          {
+            // Transform carrot into local_frame 
+            Eigen::Rotation2Df rot( -robot_angle_ );
+            Eigen::Vector2f node_to_bl = rot*(CellToCoord(node) - robot_loc_); 
+            carrot={ node_to_bl }; 
+            //std::cout << "carrot assigned" << std::endl;
+          }
 
-        if( dist_cent_to_node > circumference && 
-            dist_cent_to_node-circumference <= res_ &&
-            dist_node_to_endgoal < dist_cent_to_endgoal )
-        {
-            Eigen::Rotation2Df rot( nav_goal_angle_ );
-            Eigen::Vector2f node_to_bl = rot*CellToCoord(node) - robot_loc_;
-            carrot={ node_to_bl };  
-        }
+
       }
     return;
   }
 
-}  // namespace navigation
+  bool Navigation::PathStillValid()
+  {
+    reverse( path_.end(), path_.begin() );
+    for ( const auto& cell:path_ )
+    {
 
-//dist_node_to_endgoal > dist_cent_to_endgoal
+      std::pair< int, int > center_inflate_top{ path_deviation_limit_+cell.first, path_deviation_limit_+cell.second};
+      std::pair< int, int > center_inflate_bottom{ cell.first-path_deviation_limit_, cell.second-path_deviation_limit_};
+
+      double dist_from_top_to_bottom = (CellToCoord(center_inflate_top)-CellToCoord(center_inflate_bottom)).norm();
+      double dist_bl_to_node = (robot_loc_ - CellToCoord(cell)).norm();
+
+      if( dist_bl_to_node > dist_from_top_to_bottom  )
+      {
+        return false;
+      }  
+    }
+    return true; 
+  }
+
+
+
+}  // namespace navigation
