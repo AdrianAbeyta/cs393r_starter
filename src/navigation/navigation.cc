@@ -398,7 +398,7 @@ void Navigation::Run() {
     for( auto& path_option: path_options_ )
     {
       //-3*path_option.first.free_path_length+ //-0.5*path_option.first.clearance
-      path_option.first.cost = -6*path_option.first.free_path_length + 0.5*(path_option.first.closest_point - carrot_).norm() - 0.2*path_option.first.clearance;
+      path_option.first.cost =-3*path_option.first.free_path_length+ 0.5*(path_option.first.closest_point - carrot_).norm() - 0.1*path_option.first.clearance;
       
        if(path_option.first.cost < selected_path.cost)
        {

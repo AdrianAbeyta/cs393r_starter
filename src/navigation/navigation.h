@@ -249,7 +249,7 @@ class Navigation {
   const float tolerance_ = 0.8; // m 
 
    // Inflation paramater for choosing valid nodes. 
-  const float path_deviation_limit_ = 0.5; // m 
+  const float path_deviation_limit_ = 20; // m 
 
   ////HELMS DEEP ADDITIONS////
   ////HELMS DEEP ADDITIONS////

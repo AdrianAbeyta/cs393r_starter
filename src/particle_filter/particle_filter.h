@@ -137,7 +137,7 @@ class ParticleFilter {
   float const Q_at_ = 0.75;     // at - rotation*translation - we dont distinguish between ay, ya, xa, ax
 
   // How many beams to calculate p_z_x with
-  int const num_beams_= 50;
+  int const num_beams_= 10;
 
   // Correlation between laser beams
   float const gamma_ = 1.0;
