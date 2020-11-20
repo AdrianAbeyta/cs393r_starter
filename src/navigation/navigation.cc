@@ -380,18 +380,18 @@ void Navigation::Run() {
   GetCarrot( &carrot_ );
   if( !nav_complete_ )
   {
-    if( !PathStillValid() )
-    {
-      path_.clear();
-      visualization::ClearVisualizationMsg( global_viz_msg_ );
-      MakePlan( robot_loc_, nav_goal_loc_, &path_ ); 
-      GetCarrot( &carrot_ );
-      //visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
-    }
+    // if( !PathStillValid() )
+    // {
+    //   path_.clear();
+    //   visualization::ClearVisualizationMsg( global_viz_msg_ );
+    //   MakePlan( robot_loc_, nav_goal_loc_, &path_ ); 
+    //   GetCarrot( &carrot_ );
+    //   //visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
+    // }
 
     visualization::ClearVisualizationMsg( local_viz_msg_ );
     VisualizePath( robot_loc_, nav_goal_loc_, path_ );
-    visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
+    //visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
      
     
     PathOption selected_path{path_options_[0].first}; 
@@ -617,7 +617,9 @@ void Navigation::MakePlan( Eigen::Vector2f start , Eigen::Vector2f finish, std::
 void Navigation::VisualizePath( const Eigen::Vector2f start, const Eigen::Vector2f finish, std::vector<std::pair< int, int >> path )
 {
   // Visualize Start
-  //visualization::DrawCross( start, .25, 255, global_viz_msg_ );
+    // Eigen::Rotation2Df rot( -robot_angle_ );
+    // Eigen::Vector2f start_global = rot*(start - robot_loc_); 
+    // visualization::DrawCross(start_global, .25, 255, global_viz_msg_ );
   
   // Visualize Goal 
   visualization::DrawCross( finish, .25, 255, global_viz_msg_ ); // Inflated x to make issue more apparent. 
