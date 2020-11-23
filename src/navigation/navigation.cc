@@ -380,14 +380,14 @@ void Navigation::Run() {
   GetCarrot( &carrot_ );
   if( !nav_complete_ )
   {
-    // if( !PathStillValid() )
-    // {
-    //   path_.clear();
-    //   visualization::ClearVisualizationMsg( global_viz_msg_ );
-    //   MakePlan( robot_loc_, nav_goal_loc_, &path_ ); 
-    //   GetCarrot( &carrot_ );
-    //   //visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
-    // }
+     if( !PathStillValid() )
+     {
+       path_.clear();
+       visualization::ClearVisualizationMsg( global_viz_msg_ );
+       MakePlan( robot_loc_, nav_goal_loc_, &path_ ); 
+       GetCarrot( &carrot_ );
+       //visualization::DrawPoint( carrot_, 0, local_viz_msg_ ); 
+     }
 
     visualization::ClearVisualizationMsg( local_viz_msg_ );
     VisualizePath( robot_loc_, nav_goal_loc_, path_ );
